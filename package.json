@@ -1,0 +1,24 @@
+{
+  "name": "angular-yelpcamp-api",
+  "version": "1.0.0",
+  "description": "A nodejs api to provide RESTful services to yelpcamp UI developed in Angular",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gauravbharat/angular-yelpcamp-api.git"
+  },
+  "author": "Gaurav Mendse",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gauravbharat/angular-yelpcamp-api/issues"
+  },
+  "homepage": "https://github.com/gauravbharat/angular-yelpcamp-api#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongoose": "^5.9.27"
+  }
+}
