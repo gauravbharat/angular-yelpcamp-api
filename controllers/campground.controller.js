@@ -8,10 +8,31 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const escapeRegex = (text) => {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+};
+
 exports.getAllCampgrounds = async (req, res) => {
+  // Get the pagination query parameters
+  // Prefixing + operator to a string converts its type to Number
+  const pageSize = +req.query.pagesize;
+  let currentPage = +req.query.page;
+  let campgroundQuery = Campground.find();
+  let campgroundsCount = Campground.countDocuments();
+
+  if (req.query.search) {
+    const regex = new RegExp(escapeRegex(req.query.search), 'gi');
+    campgroundQuery = Campground.find({ name: regex });
+    campgroundsCount = Campground.countDocuments({ name: regex });
+  }
+
+  if (pageSize && currentPage) {
+    campgroundQuery.skip(pageSize * (currentPage - 1)).limit(pageSize);
+  }
+
   try {
-    const campgrounds = await Campground.find();
-    const totalCampgroundsCount = await Campground.countDocuments();
+    const campgrounds = await campgroundQuery;
+    const totalCampgroundsCount = await campgroundsCount;
 
     if (campgrounds && totalCampgroundsCount > 0) {
       res.status(200).json({
@@ -20,13 +41,11 @@ exports.getAllCampgrounds = async (req, res) => {
         maxCampgrounds: totalCampgroundsCount,
       });
     } else {
-      res
-        .status(204)
-        .json({
-          message: 'No campgrounds found!',
-          campgrounds: null,
-          maxCampgrounds: 0,
-        });
+      res.status(204).json({
+        message: 'No campgrounds found!',
+        campgrounds: null,
+        maxCampgrounds: 0,
+      });
     }
   } catch (error) {
     chalk.logError('get-all-campgrounds', error);
