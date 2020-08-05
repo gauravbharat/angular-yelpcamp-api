@@ -7,7 +7,17 @@ const CampgroundController = require('../controllers/campground.controller');
 // Get all campgrounds
 router.get('', CampgroundController.getAllCampgrounds);
 
+// Get a single campground
+router.get('/:campgroundId', CampgroundController.getCampground);
+
 // Create new campground
-router.post('', extractFile, CampgroundController.createCampground);
+router.post('/create', extractFile, CampgroundController.createCampground);
+
+// Edit/Update campground
+router.put(
+  '/edit/:campgroundId',
+  extractFile,
+  CampgroundController.editCampground
+);
 
 module.exports = router;

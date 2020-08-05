@@ -12,6 +12,9 @@ const storage = multer.diskStorage({
     // Replace empty spaces with a hyphen
     const name = file.originalname.toLowerCase().split(' ').join('-');
     const extension = MIME_TYPE_MAP[file.mimetype];
+
+    // console.log(name, extension);
+
     // return the filename, 1st argument is null for no error
     cb(null, `${name}-${Date.now()}.${extension}`);
   },
