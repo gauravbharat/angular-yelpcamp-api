@@ -13,6 +13,16 @@ const escapeRegex = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 };
 
+const getCloudinaryImagePublicId = (strPath) => {
+  // Extract Cloudinary image public Id from the path
+  if (strPath) {
+    let slice1 = strPath.slice(strPath.lastIndexOf('/') + 1);
+    let publicId = slice1.slice(0, slice1.lastIndexOf('.'));
+    return publicId;
+  }
+  return null;
+};
+
 exports.getAllCampgrounds = async (req, res) => {
   // Get the pagination query parameters
   // Prefixing + operator to a string converts its type to Number
@@ -28,8 +38,12 @@ exports.getAllCampgrounds = async (req, res) => {
     campgroundsCount = Campground.countDocuments({ name: regex });
   }
 
+  // 06082020 - Added sort to send back records in descending order
   if (pageSize && currentPage) {
-    campgroundQuery.skip(pageSize * (currentPage - 1)).limit(pageSize);
+    campgroundQuery
+      .skip(pageSize * (currentPage - 1))
+      .limit(pageSize)
+      .sort([['created', -1]]);
   }
 
   try {
@@ -122,7 +136,7 @@ exports.editCampground = async (req, res) => {
     campgroundId = await mongoose.Types.ObjectId(req.params.campgroundId);
   } else {
     chalk.logError(
-      'get-campground: Invalid campgroundId passed',
+      'edit-campground: Invalid campgroundId passed',
       req.params.campgroundId
     );
     return res.status(400).json({ message: 'Invalid Campground requested!' });
@@ -167,5 +181,56 @@ exports.editCampground = async (req, res) => {
     chalk.logError('edit-campground', error);
     console.log('edit-campground', error);
     res.status(500).json({ message: 'Error editing campground!' });
+  }
+};
+
+exports.deleteCampground = async (req, res) => {
+  let campgroundId;
+
+  /** Return if user passes an invalid campgroundId */
+  if (mongoose.Types.ObjectId.isValid(req.params.campgroundId)) {
+    campgroundId = await mongoose.Types.ObjectId(req.params.campgroundId);
+  } else {
+    chalk.logError(
+      'delete-campground: Invalid campgroundId passed',
+      req.params.campgroundId
+    );
+    return res.status(400).json({ message: 'Invalid Campground requested!' });
+  }
+
+  let imagePath;
+
+  const campground = await Campground.findById(campgroundId);
+  if (campground) {
+    imagePath = campground.image;
+  }
+
+  try {
+    const result = await Campground.deleteOne({ _id: campgroundId });
+
+    if (result.n > 0) {
+      res.status(200).json({ message: 'Post deleted!' });
+    } else {
+      // Would send this error even if campground does not exist
+      res.status(401).json({ message: 'Not authorized!' });
+    }
+  } catch (error) {
+    chalk.logError('delete-campground', error);
+    console.log('delete-campground', error);
+    res.status(500).json({
+      message: 'Error deleting campground!',
+    });
+  }
+
+  // destroy image uploaded on Cloudinary
+  try {
+    if (imagePath) {
+      let result = await cloudinary.v2.uploader.destroy(
+        getCloudinaryImagePublicId(imagePath)
+      );
+    }
+  } catch (error) {
+    chalk.logError('delete-campground: cloudinary_delete_post', error);
+    console.log('cloudinary_delete_post', error);
   }
 };

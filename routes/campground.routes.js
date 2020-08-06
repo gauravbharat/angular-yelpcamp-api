@@ -20,4 +20,7 @@ router.put(
   CampgroundController.editCampground
 );
 
+// Delete campground
+router.delete('/:campgroundId', CampgroundController.deleteCampground);
+
 module.exports = router;
