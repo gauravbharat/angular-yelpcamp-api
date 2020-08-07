@@ -147,8 +147,22 @@ exports.editCampground = async (req, res) => {
 
   if (req.file && req.file.path) {
     try {
+      const campground = await Campground.findById(campgroundId);
+      if (!campground) {
+        return res.status(404).json({ message: 'Campground not found!' });
+      }
+
+      oldImagePath = campground.image;
+
       let result = await cloudinary.uploader.upload(req.file.path);
       image = result.secure_url;
+
+      if (oldImagePath) {
+        // Don't keep the user waiting for the old image to be deleted
+        cloudinary.v2.uploader.destroy(
+          getCloudinaryImagePublicId(oldImagePath)
+        );
+      }
     } catch (error) {
       console.log('cloudinary_edit_campground', error);
       return res
