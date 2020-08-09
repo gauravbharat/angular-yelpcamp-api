@@ -6,6 +6,7 @@ const chalk = require('./utils/chalk.util');
 const app = express();
 
 const campgroundRoutes = require('./routes/campground.routes');
+const userRoutes = require('./routes/user.routes');
 
 /** Connect to database */
 mongoose
@@ -48,5 +49,6 @@ app.use((req, res, next) => {
 
 /** Set route prefixes */
 app.use('/api/campgrounds', campgroundRoutes);
+app.use('/api/users', userRoutes);
 
 module.exports = app;

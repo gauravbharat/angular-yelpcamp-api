@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+const checkAuth = require('../middleware/check-auth.middleware');
 const extractFile = require('../middleware/multer.middleware');
 const CampgroundController = require('../controllers/campground.controller');
 
@@ -11,16 +12,26 @@ router.get('', CampgroundController.getAllCampgrounds);
 router.get('/:campgroundId', CampgroundController.getCampground);
 
 // Create new campground
-router.post('/create', extractFile, CampgroundController.createCampground);
+router.post(
+  '/create',
+  checkAuth,
+  extractFile,
+  CampgroundController.createCampground
+);
 
 // Edit/Update campground
 router.put(
   '/edit/:campgroundId',
+  checkAuth,
   extractFile,
   CampgroundController.editCampground
 );
 
 // Delete campground
-router.delete('/:campgroundId', CampgroundController.deleteCampground);
+router.delete(
+  '/:campgroundId',
+  checkAuth,
+  CampgroundController.deleteCampground
+);
 
 module.exports = router;

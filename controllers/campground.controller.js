@@ -114,6 +114,16 @@ exports.createCampground = async (req, res) => {
 
     // return res.status(200).json({ message: 'trial run' });
 
+    /** Add author data available from the checkAuth middleware, after intercepting header,
+     * verifying jwt token and extracting values from decoded jwt token */
+    req.body = {
+      ...req.body,
+      author: {
+        id: req.userData.userId,
+        username: req.userData.username,
+      },
+    };
+
     let addedCampground = await Campground.create(req.body);
 
     res.status(201).json({
@@ -147,7 +157,10 @@ exports.editCampground = async (req, res) => {
 
   if (req.file && req.file.path) {
     try {
-      const campground = await Campground.findById(campgroundId);
+      const campground = await Campground.findOne({
+        _id: campgroundId,
+        'author.id': req.userData.userId,
+      });
       if (!campground) {
         return res.status(404).json({ message: 'Campground not found!' });
       }
@@ -179,11 +192,18 @@ exports.editCampground = async (req, res) => {
       image,
       location: req.body.location,
       description: req.body.description,
+      author: {
+        id: req.userData.userId,
+        username: req.userData.username,
+      },
     });
 
     //using updateOne() method instead of findOneAndUpdate() because we don't need back the new document
-    const result = await Campground.updateOne({ _id: campgroundId }, campround);
-
+    const result = await Campground.updateOne(
+      { _id: campgroundId, 'author.id': req.userData.userId },
+      campround
+    );
+    // console.log(req.userData.userId);
     // console.log('edit campground result', result);
 
     if (result.n > 0) {
@@ -220,7 +240,10 @@ exports.deleteCampground = async (req, res) => {
   }
 
   try {
-    const result = await Campground.deleteOne({ _id: campgroundId });
+    const result = await Campground.deleteOne({
+      _id: campgroundId,
+      'author.id': req.userData.userId,
+    });
 
     if (result.n > 0) {
       res.status(200).json({ message: 'Post deleted!' });
