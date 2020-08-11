@@ -40,7 +40,7 @@ exports.registerUser = async (req, res) => {
         isPublisher: newUser.isPublisher,
         isRequestedAdmin: newUser.isRequestedAdmin,
         token,
-        tokenTimer: 3600,
+        expiresIn: 3600,
       },
     });
   } catch (error) {
@@ -82,7 +82,7 @@ exports.loginUser = async (req, res) => {
         isPublisher: user.isPublisher,
         isRequestedAdmin: user.isRequestedAdmin,
         token,
-        tokenTimer: 3600,
+        expiresIn: 3600,
       },
     });
   } catch (error) {
