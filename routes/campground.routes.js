@@ -8,6 +8,9 @@ const CampgroundController = require('../controllers/campground.controller');
 // Get all campgrounds
 router.get('', CampgroundController.getAllCampgrounds);
 
+// Get all amenities
+router.get('/amenities', CampgroundController.getAllAmenities);
+
 // Get a single campground
 router.get('/:campgroundId', CampgroundController.getCampground);
 

@@ -1,9 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const path = require('path');
 const chalk = require('./utils/chalk.util');
 const app = express();
+
+const { populateAmenities } = require('./models/amenities.model');
 
 const campgroundRoutes = require('./routes/campground.routes');
 const userRoutes = require('./routes/user.routes');
@@ -17,6 +18,11 @@ mongoose
   })
   .then(() => {
     chalk.logSuccess('Connected to database!');
+    return;
+  })
+  .then(() => {
+    // Populate campground amenities if the collection is empty
+    populateAmenities();
   })
   .catch((error) => {
     chalk.logError('database connection error', error);

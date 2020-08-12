@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Campground = require('../models/campground.model');
+const { Amenities } = require('../models/amenities.model');
 const chalk = require('../utils/chalk.util');
 
 let cloudinary = require('cloudinary');
@@ -21,6 +22,29 @@ const getCloudinaryImagePublicId = (strPath) => {
     return publicId;
   }
   return null;
+};
+
+exports.getAllAmenities = async (req, res) => {
+  //No auth required to get this static data list
+  try {
+    const amenitiesList = await Amenities.find();
+
+    if (amenitiesList) {
+      res.status(200).json({
+        message: 'Amenities fetched successfully!',
+        amenitiesList,
+      });
+    } else {
+      res.status(204).json({
+        message: 'No amenities found, contact Angular-YelpCamp administrator!',
+        amenitiesList,
+      });
+    }
+  } catch (error) {
+    chalk.logError('get-all-amenities', error);
+    console.log('get-all-amenities', error);
+    res.status(500).json({ message: 'Error fetching amenities!' });
+  }
 };
 
 exports.getAllCampgrounds = async (req, res) => {
@@ -47,8 +71,10 @@ exports.getAllCampgrounds = async (req, res) => {
   }
 
   try {
-    const campgrounds = await campgroundQuery;
+    const campgrounds = await campgroundQuery.populate('amenities').exec();
     const totalCampgroundsCount = await campgroundsCount;
+
+    // console.log(campgrounds);
 
     if (campgrounds && totalCampgroundsCount > 0) {
       res.status(200).json({
@@ -85,7 +111,9 @@ exports.getCampground = async (req, res) => {
   }
 
   try {
-    const campground = await Campground.findById(campgroundId);
+    const campground = await Campground.findOne({ _id: campgroundId })
+      .populate('amenities')
+      .exec();
 
     // console.log(campground);
 
@@ -106,6 +134,10 @@ exports.getCampground = async (req, res) => {
 exports.createCampground = async (req, res) => {
   // console.log(req.body);
   // console.log(req.file.path);
+
+  if (typeof req.body.amenities === 'string') {
+    req.body.amenities = JSON.parse(req.body.amenities);
+  }
 
   try {
     // upload image file on cloud and save return path on db
@@ -196,6 +228,10 @@ exports.editCampground = async (req, res) => {
         id: req.userData.userId,
         username: req.userData.username,
       },
+      amenities:
+        typeof req.body.amenities === 'string'
+          ? JSON.parse(req.body.amenities)
+          : req.body.amenities,
     });
 
     //using updateOne() method instead of findOneAndUpdate() because we don't need back the new document
