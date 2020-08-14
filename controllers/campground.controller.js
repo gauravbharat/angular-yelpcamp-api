@@ -47,9 +47,13 @@ exports.getAllAmenities = async (req, res) => {
       });
     }
   } catch (error) {
-    chalk.logError('get-all-amenities', error);
-    console.log('get-all-amenities', error);
-    res.status(500).json({ message: 'Error fetching amenities!' });
+    return returnError(
+      'get-all-amenities',
+      error,
+      500,
+      'Error fetching amenities!',
+      res
+    );
   }
 };
 
@@ -99,25 +103,30 @@ exports.getAllCampgrounds = async (req, res) => {
       });
     }
   } catch (error) {
-    chalk.logError('get-all-campgrounds', error);
-    console.log('get-all-campgrounds', error);
-    res.status(500).json({ message: 'Error fetching campgrounds!' });
+    return returnError(
+      'get-all-campgrounds',
+      error,
+      500,
+      'Error fetching campgrounds!',
+      res
+    );
   }
 };
 
 exports.getCampground = async (req, res) => {
-  let campgroundId;
-
   /** Return if user passes an invalid campgroundId */
-  if (mongoose.Types.ObjectId.isValid(req.params.campgroundId)) {
-    campgroundId = await mongoose.Types.ObjectId(req.params.campgroundId);
-  } else {
-    chalk.logError(
-      'get-campground: Invalid campgroundId passed',
-      req.params.campgroundId
-    );
-    return res.status(400).json({ message: 'Invalid Campground requested!' });
+  let response = await validateIdentifier(
+    PROCESS_CAMPGROUND,
+    'get-campground',
+    req.params.campgroundId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
   }
+
+  let campgroundId = response.id;
 
   try {
     const campground = await Campground.findOne({ _id: campgroundId })
@@ -133,11 +142,13 @@ exports.getCampground = async (req, res) => {
       res.status(404).json({ message: 'Campground not found!' });
     }
   } catch (error) {
-    chalk.logError('get-campground', error);
-    console.log('get-campground', error);
-    res.status(500).json({
-      message: 'Fetching post failed!',
-    });
+    return returnError(
+      'get-campground',
+      error,
+      500,
+      'Fetching campground failed!',
+      res
+    );
   }
 };
 
@@ -174,25 +185,30 @@ exports.createCampground = async (req, res) => {
       campgroundId: addedCampground._id,
     });
   } catch (error) {
-    chalk.logError('create-campground', error);
-    console.log('create-campground', error);
-    res.status(500).json({ message: 'Error creating campground!' });
+    return returnError(
+      'create-campground',
+      error,
+      500,
+      'Error creating campground!',
+      res
+    );
   }
 };
 
 exports.editCampground = async (req, res) => {
-  let campgroundId;
-
   /** Return if user passes an invalid campgroundId */
-  if (mongoose.Types.ObjectId.isValid(req.params.campgroundId)) {
-    campgroundId = await mongoose.Types.ObjectId(req.params.campgroundId);
-  } else {
-    chalk.logError(
-      'edit-campground: Invalid campgroundId passed',
-      req.params.campgroundId
-    );
-    return res.status(400).json({ message: 'Invalid Campground requested!' });
+  let response = await validateIdentifier(
+    PROCESS_CAMPGROUND,
+    'edit-campground',
+    req.params.campgroundId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
   }
+
+  let campgroundId = response.id;
 
   // Update the old image file name when NOT updating post with a new image
   let image = req.body.image;
@@ -258,26 +274,30 @@ exports.editCampground = async (req, res) => {
       res.status(401).json({ message: 'Not authorized!' });
     }
   } catch (error) {
-    chalk.logError('edit-campground', error);
-    console.log('edit-campground', error);
-    res.status(500).json({ message: 'Error editing campground!' });
+    return returnError(
+      'edit-campground',
+      error,
+      500,
+      'Error editing campground!',
+      res
+    );
   }
 };
 
 exports.deleteCampground = async (req, res) => {
-  let campgroundId;
-
   /** Return if user passes an invalid campgroundId */
-  if (mongoose.Types.ObjectId.isValid(req.params.campgroundId)) {
-    campgroundId = await mongoose.Types.ObjectId(req.params.campgroundId);
-  } else {
-    chalk.logError(
-      'delete-campground: Invalid campgroundId passed',
-      req.params.campgroundId
-    );
-    return res.status(400).json({ message: 'Invalid Campground requested!' });
+  let response = await validateIdentifier(
+    PROCESS_CAMPGROUND,
+    'edit-campground',
+    req.params.campgroundId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
   }
 
+  let campgroundId = response.id;
   let imagePath;
 
   const campground = await Campground.findById(campgroundId);
@@ -298,11 +318,13 @@ exports.deleteCampground = async (req, res) => {
       res.status(401).json({ message: 'Not authorized!' });
     }
   } catch (error) {
-    chalk.logError('delete-campground', error);
-    console.log('delete-campground', error);
-    res.status(500).json({
-      message: 'Error deleting campground!',
-    });
+    return returnError(
+      'delete-campground',
+      error,
+      500,
+      'Error deleting campground!',
+      res
+    );
   }
 
   // destroy image uploaded on Cloudinary

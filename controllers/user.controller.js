@@ -1,15 +1,16 @@
 // const mongoose = require(mongoose);
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
 const User = require('../models/user.model');
-const chalk = require('../utils/chalk.util');
+const { returnError } = require('../utils/error.util');
 
 exports.registerUser = async (req, res) => {
   if (!req.body) {
-    return res.status(400).json({
-      message: 'No user registration data received!',
-    });
+    return returnError(
+      'register-user',
+      error,
+      400,
+      'No user registration data received!',
+      res
+    );
   }
 
   try {
@@ -44,23 +45,28 @@ exports.registerUser = async (req, res) => {
       },
     });
   } catch (error) {
-    chalk.logError('register-user', error);
-    console.log('register-user', error);
-    res.status(500).json({
-      message: 'User registration failed!',
+    return returnError(
+      'register-user',
       error,
-    });
+      500,
+      'User registration failed!',
+      res
+    );
   }
 };
 
 exports.loginUser = async (req, res) => {
   if (!req.body) {
-    return res.status(400).json({
-      message: 'No user login data received!',
-    });
+    return returnError(
+      'login-user',
+      error,
+      400,
+      'No user login data received!',
+      res
+    );
   }
 
-  console.log(req.body);
+  // console.log(req.body);
 
   try {
     const user = await User.findByCredentials(
@@ -88,12 +94,7 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    chalk.logError('login-user', error);
-    console.log('login-user', error);
-    res.status(500).json({
-      message: 'User login failed!',
-      error,
-    });
+    return returnError('login-user', error, 500, 'User login failed!', res);
   }
 };
 

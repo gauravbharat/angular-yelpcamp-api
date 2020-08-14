@@ -1,38 +1,5 @@
 const mongoose = require('mongoose');
 
-// let campgroundSchema = new mongoose.Schema(
-//   {
-//     name: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     price: {
-//       type: Number,
-//       default: 0,
-//       validate(value) {
-//         if (value < 0) throw new Error('Price must be a positive number!');
-//       },
-//     },
-//     image: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     location: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     description: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//   },
-//   { timestamps: true }
-// );
-
 // MATCH WITH EXISTING SCHEMA ON YELPCAMP
 let campgroundSchema = new mongoose.Schema({
   name: { type: String, required: true },
