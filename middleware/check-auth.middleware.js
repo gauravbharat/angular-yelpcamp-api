@@ -20,11 +20,9 @@ module.exports = (req, res, next) => {
 
     next(); // all good, continue
   } catch (error) {
-    res
-      .status(401)
-      .json({
-        message:
-          'You are either not authenticated or authorized to perform this action!',
-      });
+    res.status(401).json({
+      message:
+        'You are either not authenticated or authorized to perform this action! Please try signing-in again.',
+    });
   }
 };

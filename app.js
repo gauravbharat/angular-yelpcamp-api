@@ -3,11 +3,13 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const chalk = require('./utils/chalk.util');
 const app = express();
+const expressSanitizer = require('express-sanitizer');
 
 const { populateAmenities } = require('./models/amenities.model');
 
 const campgroundRoutes = require('./routes/campground.routes');
 const userRoutes = require('./routes/user.routes');
+const commentRoutes = require('./routes/comment.routes');
 
 /** Connect to database */
 mongoose
@@ -34,6 +36,9 @@ mongoose
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+/** Use Express Sanitizer for select incoming text */
+app.use(expressSanitizer());
+
 /** Intercept incoming requests and allow CORS by setting following headers to -
  * Allow ANY origin access,
  * Allow SPECIFIC header requests, and
@@ -56,5 +61,6 @@ app.use((req, res, next) => {
 /** Set route prefixes */
 app.use('/api/campgrounds', campgroundRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/campgrounds/:campgroundId/comments', commentRoutes);
 
 module.exports = app;

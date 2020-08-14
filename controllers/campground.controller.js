@@ -3,6 +3,12 @@ const Campground = require('../models/campground.model');
 const { Amenities } = require('../models/amenities.model');
 const chalk = require('../utils/chalk.util');
 
+const {
+  PROCESS_CAMPGROUND,
+  validateIdentifier,
+} = require('../utils/validations.util');
+const { returnError } = require('../utils/error.util');
+
 let cloudinary = require('cloudinary');
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -71,7 +77,10 @@ exports.getAllCampgrounds = async (req, res) => {
   }
 
   try {
-    const campgrounds = await campgroundQuery.populate('amenities').exec();
+    const campgrounds = await campgroundQuery
+      .populate('amenities')
+      .populate('comments')
+      .exec();
     const totalCampgroundsCount = await campgroundsCount;
 
     // console.log(campgrounds);
@@ -113,6 +122,7 @@ exports.getCampground = async (req, res) => {
   try {
     const campground = await Campground.findOne({ _id: campgroundId })
       .populate('amenities')
+      .populate('comments')
       .exec();
 
     // console.log(campground);
