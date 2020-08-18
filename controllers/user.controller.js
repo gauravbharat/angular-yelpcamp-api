@@ -165,7 +165,12 @@ exports.getUser = async (req, res) => {
     const userData = await User.findById(userId);
 
     if (!userData) {
-      return res.status(404).json({ message: 'User not found!' });
+      return res
+        .status(404)
+        .json({
+          message:
+            'User does not exist now, the account may have been deleted or removed!',
+        });
     }
 
     /** Get User Campgrounds, limit to last 10 */
