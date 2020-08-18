@@ -37,7 +37,39 @@ exports.registerUser = async (req, res) => {
     const newUser = await userData.save();
     const token = await userData.generateAuthToken();
 
-    /** Send a welcome email to the user */
+    res.status(201).json({
+      message: 'User registered!',
+      newUser: {
+        userId: newUser._id,
+        email: newUser.email,
+        username: newUser.username,
+        firstname: newUser.firstName,
+        lastname: newUser.lastName,
+        isAdmin: newUser.isAdmin,
+        avatar: newUser.avatar,
+        followers: newUser.followers,
+        notifications: newUser.notifications,
+        isPublisher: newUser.isPublisher,
+        isRequestedAdmin: newUser.isRequestedAdmin,
+        isSuperAdmin: newUser.isSuperAdmin,
+        token,
+        expiresIn: 3600,
+      },
+    });
+  } catch (error) {
+    return returnError(
+      'register-user',
+      error,
+      500,
+      'User registration failed!',
+      res
+    );
+  }
+
+  try {
+    /** Send a welcome email to the user
+     * this process shouldn't block user registration by http error
+     */
     await EmailHandler.sendEmail({
       process: EmailHandler.PROCESS_NEW_USER,
       emailTo: req.body.email,
@@ -67,34 +99,8 @@ exports.registerUser = async (req, res) => {
       <h4>Best Regards,</h4>
       <h4><strong>The Angular-YelpCamp Team &#9968;</strong></h4>`,
     });
-
-    res.status(201).json({
-      message: 'User registered!',
-      newUser: {
-        userId: newUser._id,
-        email: newUser.email,
-        username: newUser.username,
-        firstname: newUser.firstName,
-        lastname: newUser.lastName,
-        isAdmin: newUser.isAdmin,
-        avatar: newUser.avatar,
-        followers: newUser.followers,
-        notifications: newUser.notifications,
-        isPublisher: newUser.isPublisher,
-        isRequestedAdmin: newUser.isRequestedAdmin,
-        isSuperAdmin: newUser.isSuperAdmin,
-        token,
-        expiresIn: 3600,
-      },
-    });
   } catch (error) {
-    return returnError(
-      'register-user',
-      error,
-      500,
-      'User registration failed!',
-      res
-    );
+    console.log('error sending registration email', error);
   }
 };
 
