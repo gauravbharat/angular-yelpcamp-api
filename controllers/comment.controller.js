@@ -158,7 +158,7 @@ exports.deleteComment = async (req, res) => {
   let commentId = response.id;
 
   response = await validateIdentifier(
-    PROCESS_COMMENT,
+    PROCESS_USER,
     subprocess,
     req.params.userId,
     res
@@ -245,7 +245,7 @@ exports.deleteComment = async (req, res) => {
   try {
     const result = await Campground.updateOne(
       { _id: campgroundId },
-      { $pull: { comments: commentId } }
+      { $pullAll: { comments: commentId } }
     );
 
     if (result.n > 0) {
