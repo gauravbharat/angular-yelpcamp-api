@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const EmailHandler = require('../utils/email.util');
 
 const User = require('../models/user.model');
 const Campground = require('../models/campground.model');
@@ -35,6 +36,37 @@ exports.registerUser = async (req, res) => {
 
     const newUser = await userData.save();
     const token = await userData.generateAuthToken();
+
+    /** Send a welcome email to the user */
+    await EmailHandler.sendEmail({
+      process: EmailHandler.PROCESS_NEW_USER,
+      emailTo: req.body.email,
+      emailSubject: `Angular-YelpCamp: Welcome!`,
+      emailBody: `<h1>Hello, ${req.body.firstname}!</h1>
+      <br />
+      <h3>We are glad you chose to be a part of our <a href="https://secure-sands-36219.herokuapp.com/" target="_blank">Angular-YelpCamp community.</a></h3>
+      <br />
+      <p>
+        Feel free to explore fellow member campgrounds, post your own camps or let the
+        members know what you think about their camps!
+      </p>
+      <br />
+      <hr />
+      <p>For your records, your registration details are -</p>
+      <ul>
+        <li>username: ${req.body.username}</li>
+        <li>username: ${req.body.email}</li>
+        <li>username: ${req.body.firstname}</li>
+        <li>username: ${req.body.lastname}</li>
+      </ul>
+      <hr />
+      <br />
+      
+      <h3>Warm welcome, and happy camping!!</h3>
+      <br />
+      <h4>Best Regards,</h4>
+      <h4><strong>The Angular-YelpCamp Team &#9968;</strong></h4>`,
+    });
 
     res.status(201).json({
       message: 'User registered!',
@@ -165,12 +197,10 @@ exports.getUser = async (req, res) => {
     const userData = await User.findById(userId);
 
     if (!userData) {
-      return res
-        .status(404)
-        .json({
-          message:
-            'User does not exist now, the account may have been deleted or removed!',
-        });
+      return res.status(404).json({
+        message:
+          'User does not exist now, the account may have been deleted or removed!',
+      });
     }
 
     /** Get User Campgrounds, limit to last 10 */
