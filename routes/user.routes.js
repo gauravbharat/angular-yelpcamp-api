@@ -28,4 +28,18 @@ router.put('/pwd/me', checkAuth, UserController.updateUserPassword);
 // Change user details
 router.put('/detail/me', checkAuth, UserController.updateUserDetails);
 
+// Update notifications
+router.post(
+  '/notifications/update',
+  checkAuth,
+  UserController.updateNotification
+);
+
+// Remove notification/s
+router.post(
+  '/notifications/remove',
+  checkAuth,
+  UserController.removeNotifications
+);
+
 module.exports = router;

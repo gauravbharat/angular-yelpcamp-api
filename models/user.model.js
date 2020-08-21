@@ -87,11 +87,11 @@ userSchema.statics.findByCredentials = async (username, email, password) => {
   let user;
 
   if (username) {
-    user = await User.findOne({ username });
+    user = await User.findOne({ username }).populate('notifications').exec();
   }
 
   if (!user && email) {
-    user = await User.findOne({ email });
+    user = await User.findOne({ email }).populate('notifications').exec();
   }
 
   if (!user) {

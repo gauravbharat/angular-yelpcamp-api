@@ -4,12 +4,16 @@ const EmailHandler = require('../utils/email.util');
 const User = require('../models/user.model');
 const Campground = require('../models/campground.model');
 const Comment = require('../models/comment.model');
+const Notification = require('../models/notification.model');
+
+const NotificationController = require('./notification.controller');
 
 const {
   validateIdentifier,
   PROCESS_USER,
 } = require('../utils/validations.util');
 const { returnError } = require('../utils/error.util');
+const { isArray } = require('util');
 
 exports.registerUser = async (req, res) => {
   if (!req.body) {
@@ -339,7 +343,7 @@ exports.toggleFollowUser = async (req, res) => {
   response = await validateIdentifier(
     PROCESS_USER,
     'follow-co-user',
-    req.body.followingUserId,
+    req.body.followerUserId,
     res
   );
 
@@ -347,16 +351,107 @@ exports.toggleFollowUser = async (req, res) => {
     return res;
   }
 
-  let followingUserId = response.id;
+  let followerUserId = response.id;
   let action;
 
   if (req.body.follow) {
-    action = { $push: { followers: followingUserId } };
+    action = { $push: { followers: followerUserId } };
   } else {
-    action = { $pullAll: { followers: [followingUserId] } };
+    action = { $pullAll: { followers: [followerUserId] } };
   }
 
   try {
+    /** When current user follows a fellow user, created a notification for that user */
+    const currentUser = await User.findById(followerUserId);
+
+    if (req.body.follow) {
+      let notification = await NotificationController.createNotification({
+        username: currentUser.username,
+        follower: {
+          id: currentUser._id,
+          followerAvatar: currentUser.avatar,
+          followingUserId: userToFollowId,
+        },
+        notificationType: NotificationController.notificationTypes.NEW_FOLLOWER,
+      });
+
+      action = {
+        $push: { followers: followerUserId, notifications: notification._id },
+      };
+    } else {
+      /** If current user unfollows a fellow user =>
+       * fetch fellow user notifications
+       * filter to select only those where current user id matches with that of the follower
+       * delete such notifications
+       * pull out from notifications array of fellow user
+       */
+      action = { $pullAll: { followers: [followerUserId] } };
+
+      const notifications = await Notification.find({
+        'follower.id': followerUserId,
+        'follower.followingUserId': userToFollowId,
+      });
+
+      if (notifications && notifications.length > 0) {
+        let notification_ids = await notifications.map((notification) => {
+          return notification._id;
+        });
+
+        await Notification.deleteMany({
+          'follower.id': followerUserId,
+          'follower.followingUserId': userToFollowId,
+        });
+
+        /** Take this opportunity to pull-out those notification ids which does not exist */
+        User.findById(userToFollowId)
+          .populate('notifications')
+          .exec(async (err, user) => {
+            let deadNotifications;
+
+            // Get active notifications, if any
+            let activeNotifications = user.notifications.map(
+              (notification) => notification._id
+            );
+
+            // Get all notifications currently stored
+            let userData = await User.findOne({ _id: userToFollowId });
+            let allNotifications = userData.notifications;
+
+            // Separate the dead-ref ones
+            if (activeNotifications && activeNotifications.length > 0) {
+              deadNotifications = allNotifications.filter(
+                (x) => !activeNotifications.includes(x)
+              );
+            } else {
+              deadNotifications = allNotifications;
+            }
+
+            // console.log('activeNotifications', activeNotifications);
+            // console.log('allNotifications', allNotifications);
+            // console.log('deadNotifications', deadNotifications);
+
+            // Remove dead-ref notifications
+            if (deadNotifications && deadNotifications.length > 0) {
+              await User.updateOne(
+                { _id: userToFollowId },
+                {
+                  $pullAll: {
+                    notifications: [...deadNotifications],
+                  },
+                }
+              );
+            }
+          });
+
+        action = {
+          $pullAll: {
+            followers: [followerUserId],
+            notifications: [...notification_ids],
+          },
+        };
+      }
+    }
+
     const result = await User.updateOne({ _id: userToFollowId }, action);
 
     // console.log('user follow result', result, 'option', req.body.follow);
@@ -540,6 +635,62 @@ const getUserCampgrounds = async (userId) => {
     }));
   } catch (error) {
     throw new Error('Error getting user campgrounds!');
+  }
+};
+
+/** Set user notifications to read or unread */
+exports.updateNotification = async (req, res) => {
+  try {
+    if (!isArray(req.body.notificationArr)) {
+      return res.status(400).json({
+        message:
+          'Invalid data format received to remove notification/s. Please contact web administrator.',
+      });
+    }
+
+    await NotificationController.updateNotification(req, res, next);
+
+    res.status(200).json({ message: 'Notification updated!' });
+  } catch (error) {
+    return returnError(
+      'update-user-notifications',
+      error,
+      500,
+      'Error updating user notifications!',
+      res
+    );
+  }
+};
+
+exports.removeNotifications = async (req, res) => {
+  try {
+    if (!isArray(req.body.notificationArr)) {
+      return res.status(400).json({
+        message:
+          'Invalid data format received to remove notification/s. Please contact web administrator.',
+      });
+    }
+
+    let result = await User.updateOne(
+      { _id: req.userData.userId },
+      {
+        $pullAll: {
+          notifications: [req.body.notificationArr],
+        },
+      }
+    );
+
+    await NotificationController.deleteNotification(req, res, next);
+
+    res.status(200).json({ message: 'Notification removed!' });
+  } catch (error) {
+    return returnError(
+      'remove-user-notifications',
+      error,
+      500,
+      'Error removing user notifications!',
+      res
+    );
   }
 };
 

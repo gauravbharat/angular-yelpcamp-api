@@ -1,7 +1,10 @@
 const mongoose = require('mongoose');
 const Campground = require('../models/campground.model');
+const User = require('../models/user.model');
 const { Amenities } = require('../models/amenities.model');
 const chalk = require('../utils/chalk.util');
+
+const NotificationController = require('./notification.controller');
 
 const {
   PROCESS_CAMPGROUND,
@@ -153,8 +156,7 @@ exports.getCampground = async (req, res) => {
 };
 
 exports.createCampground = async (req, res) => {
-  // console.log(req.body);
-  // console.log(req.file.path);
+  let addedCampground;
 
   if (typeof req.body.amenities === 'string') {
     req.body.amenities = JSON.parse(req.body.amenities);
@@ -177,7 +179,7 @@ exports.createCampground = async (req, res) => {
       },
     };
 
-    let addedCampground = await Campground.create(req.body);
+    addedCampground = await Campground.create(req.body);
 
     res.status(201).json({
       message: 'Campground created successfully!',
@@ -192,6 +194,33 @@ exports.createCampground = async (req, res) => {
       'Error creating campground!',
       res
     );
+  }
+
+  /** 21082020 - Add new, non-blocking, campground notification to followers of the campground author */
+  try {
+    if (addedCampground) {
+      const campgroundAuthor = await User.findById(req.userData.userId)
+        .populate('followers')
+        .exec();
+
+      if (campgroundAuthor.followers && campgroundAuthor.followers.length > 0) {
+        await campgroundAuthor.followers.forEach(async (follower) => {
+          let notification = await NotificationController.createNotification({
+            campgroundId: addedCampground._id,
+            campgroundName: addedCampground.name,
+            userId: req.userData.userId,
+            username: req.userData.username,
+            notificationType:
+              NotificationController.notificationTypes.NEW_CAMPGROUND,
+          });
+
+          await follower.notifications.push(notification);
+          await follower.save();
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
   }
 };
 

@@ -2,6 +2,8 @@ const Campground = require('../models/campground.model');
 const Comment = require('../models/comment.model');
 const User = require('../models/user.model');
 
+const NotificationController = require('./notification.controller');
+
 const {
   PROCESS_CAMPGROUND,
   PROCESS_COMMENT,
@@ -10,9 +12,9 @@ const {
 } = require('../utils/validations.util');
 const { returnError } = require('../utils/error.util');
 
-exports.getCampgroundComments = async (req, res) => {
-  //
-};
+// exports.getCampgroundComments = async (req, res) => {
+//   //
+// };
 
 exports.createComment = async (req, res) => {
   let subprocess = 'create-comment';
@@ -65,7 +67,7 @@ exports.createComment = async (req, res) => {
     foundCampground.comments.push(newComment);
     await foundCampground.save();
 
-    return res.status(200).json({ message: 'Comment added successfully!' });
+    res.status(200).json({ message: 'Comment added successfully!' });
   } catch (error) {
     return returnError(
       subprocess,
@@ -74,6 +76,38 @@ exports.createComment = async (req, res) => {
       'Error updating campground for new comment!',
       res
     );
+  }
+
+  /* 19082020 - Gaurav - Add notification when a comment is added, no error should be thrown on its failure though 
+      1. confirm that the campground author and the comment author are not the same, no notifications for self comments
+      2. find the campground author ID
+      3. create a notification with the username, campground ID and name, comment ID and user ID
+      4. update the notifications array for the campground author (user) 
+    */
+  try {
+    if (foundCampground.author.id !== req.body.userId) {
+      const campgroundAuthor = await User.findById(foundCampground.author.id);
+
+      // User may or may not exist
+      if (campgroundAuthor) {
+        let notification = await NotificationController.createNotification({
+          campgroundId: foundCampground._id,
+          commentId: newComment._id,
+          campgroundName: foundCampground.name,
+          userId: req.body.userId,
+          username: req.body.username,
+          notificationType:
+            NotificationController.notificationTypes.NEW_COMMENT,
+        });
+
+        if (notification) {
+          await campgroundAuthor.notifications.push(notification);
+          await campgroundAuthor.save();
+        }
+      }
+    }
+  } catch (error) {
+    console.log(error);
   }
 };
 
@@ -245,7 +279,7 @@ exports.deleteComment = async (req, res) => {
   try {
     const result = await Campground.updateOne(
       { _id: campgroundId },
-      { $pullAll: { comments: commentId } }
+      { $pullAll: { comments: [commentId] } }
     );
 
     if (result.n > 0) {

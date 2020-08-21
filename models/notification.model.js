@@ -15,6 +15,17 @@ let notificationSchema = new mongoose.Schema({
   },
   campgroundName: { type: String },
   notificationType: { type: Number, required: true },
+  follower: {
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    followerAvatar: String,
+    followingUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  },
 });
 
 /*
@@ -23,6 +34,7 @@ let notificationSchema = new mongoose.Schema({
   New Campground              0
   New Comment                 1
   User Admin Request          2
+  New Follower                3
  */
 
 module.exports = mongoose.model('Notification', notificationSchema);
