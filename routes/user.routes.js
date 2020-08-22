@@ -42,4 +42,13 @@ router.post(
   UserController.removeNotifications
 );
 
+// create new password reset request
+router.post('/reset', UserController.createResetToken);
+
+// Verify reset token
+router.get('/reset/:token', UserController.verifyResetToken);
+
+// reset password
+router.post('/reset/:token', UserController.resetPassword);
+
 module.exports = router;

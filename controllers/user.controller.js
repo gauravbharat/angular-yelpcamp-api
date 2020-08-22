@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const EmailHandler = require('../utils/email.util');
 
 const User = require('../models/user.model');
@@ -13,7 +14,25 @@ const {
   PROCESS_USER,
 } = require('../utils/validations.util');
 const { returnError } = require('../utils/error.util');
-const { isArray } = require('util');
+const { isArray, isString } = require('util');
+
+const getUserCampgrounds = async (userId) => {
+  try {
+    const campgrounds = await Campground.find({ 'author.id': userId })
+      .limit(10)
+      .sort([['created', -1]]);
+
+    return (mappedCamgrounds = campgrounds.map((campground) => {
+      return {
+        campgroundId: campground._id,
+        campgroundName: campground.name,
+        campgroundCreated: campground.created,
+      };
+    }));
+  } catch (error) {
+    throw new Error('Error getting user campgrounds!');
+  }
+};
 
 exports.registerUser = async (req, res) => {
   if (!req.body) {
@@ -76,11 +95,12 @@ exports.registerUser = async (req, res) => {
      */
     await EmailHandler.sendEmail({
       process: EmailHandler.PROCESS_NEW_USER,
+      textOnly: false,
       emailTo: req.body.email,
       emailSubject: `Angular-YelpCamp: Welcome!`,
       emailBody: `<h1>Hello, ${req.body.firstname}!</h1>
       <br />
-      <h3>We are glad you chose to be a part of our <a href="https://secure-sands-36219.herokuapp.com/" target="_blank">Angular-YelpCamp community.</a></h3>
+      <h3>We are glad you chose to be a part of our <a href="${process.env.CLIENT_URL}" target="_blank">Angular-YelpCamp community.</a></h3>
       <br />
       <p>
         Feel free to explore fellow member campgrounds, post your own camps or let the
@@ -620,24 +640,6 @@ exports.updateUserDetails = async (req, res) => {
   }
 };
 
-const getUserCampgrounds = async (userId) => {
-  try {
-    const campgrounds = await Campground.find({ 'author.id': userId })
-      .limit(10)
-      .sort([['created', -1]]);
-
-    return (mappedCamgrounds = campgrounds.map((campground) => {
-      return {
-        campgroundId: campground._id,
-        campgroundName: campground.name,
-        campgroundCreated: campground.created,
-      };
-    }));
-  } catch (error) {
-    throw new Error('Error getting user campgrounds!');
-  }
-};
-
 /** Set user notifications to read or unread */
 exports.updateNotification = async (req, res) => {
   try {
@@ -693,6 +695,171 @@ exports.removeNotifications = async (req, res) => {
     );
   }
 };
+
+/** Password reset related methods - Start */
+exports.createResetToken = async (req, res) => {
+  try {
+    // Check user email exists
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User for password reset not found!',
+      });
+    }
+
+    // create a token and save it for the user
+    const buf = await crypto.randomBytes(20);
+    const token = buf.toString('hex');
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+    await user.save();
+
+    // send password reset link to user
+    await EmailHandler.sendEmail({
+      process: EmailHandler.PROCESS_RESET_PASSWORD_TOKEN_REQUEST,
+      textOnly: true,
+      emailTo: req.body.email,
+      emailSubject: `Angular-YelpCamp: Password Reset`,
+      emailBody: `You are receiving this because you (or someone else) have requested the reset of the Angular-YelpCamp password. \n\n
+       Please click on the following link, or paste this into your browser to complete the process - \n 
+       ${process.env.CLIENT_URL}/auth/reset/${token}\n\n
+      If you did not request this, please ignore this email and your Angular-YelpCamp password will remain unchanged.\n 
+      The Angular-YelpCamp Team`,
+    });
+
+    res
+      .status(200)
+      .json({ message: 'Password reset link sent to user email address!' });
+  } catch (error) {
+    return returnError(
+      'create-reset-token',
+      error,
+      500,
+      'Server error creating reset password link!',
+      res
+    );
+  }
+};
+
+exports.verifyResetToken = async (req, res) => {
+  if (!req.params.token || !isString(req.params.token)) {
+    return res.status(400).json({
+      message:
+        'Invalid data format received to reset password. Please contact web administrator.',
+    });
+  }
+
+  try {
+    const user = await User.findOne({ resetPasswordToken: req.params.token });
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'Password reset token is invalid or has expired.',
+      });
+    }
+
+    const expiresIn = user.resetPasswordExpires.getTime();
+    const now = new Date();
+
+    // console.log('expiresIn', expiresIn);
+    // console.log('now', now.getTime());
+
+    if (now.getTime() > expiresIn) {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+
+      return res.status(401).json({
+        message: 'Password reset token is invalid or has expired.',
+      });
+    }
+
+    res.status(200).json({ message: 'Token verified successfully!' });
+  } catch (error) {
+    return returnError(
+      'verify-reset-token',
+      error,
+      500,
+      'Server error verifying reset token!',
+      res
+    );
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  let user;
+  if (
+    !req.params.token ||
+    !isString(req.params.token) ||
+    !req.body.newpw ||
+    !isString(req.body.newpw)
+  ) {
+    return res.status(400).json({
+      message:
+        'Invalid data format received to reset password. Please contact web administrator.',
+    });
+  }
+
+  try {
+    user = await User.findOne({ resetPasswordToken: req.params.token });
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'Password reset token is invalid or has expired.',
+      });
+    }
+
+    const expiresIn = user.resetPasswordExpires.getTime();
+    const now = new Date();
+
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    if (now.getTime() > expiresIn) {
+      await user.save();
+      return res.status(401).json({
+        message: 'Password reset token is invalid or has expired.',
+      });
+    }
+
+    user.password = req.body.newpw;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Password reset! Please login with your new password.',
+    });
+  } catch (error) {
+    return returnError(
+      'reset-password',
+      error,
+      500,
+      'Server error resetting user password!',
+      res
+    );
+  }
+
+  try {
+    // send password reset success to user, without sending any http error back on email service malfunction
+    await EmailHandler.sendEmail({
+      process: EmailHandler.PROCESS_RESET_PASSWORD_CONFIRMATION,
+      textOnly: true,
+      emailTo: user.email,
+      emailSubject: `Angular-YelpCamp: Your password has been changed`,
+      emailBody: `Hello ${user.username},\n\n
+          This is a confirmation that the password for your account ${user.email} has just changed.\n
+          
+          *** In case you have not requested this change, please contact Angular-YelpCamp immediately on support@veerappa.co ***\n
+          
+          The Angular-YelpCamp Team`,
+    });
+  } catch (error) {
+    console.log('email send password reset', error);
+  }
+};
+/** Password reset related methods - Ends */
 
 /** JWT (JSON Web Token) =>
 1. package of information, hashed into one long string
