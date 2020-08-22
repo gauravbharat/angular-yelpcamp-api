@@ -641,14 +641,14 @@ const getUserCampgrounds = async (userId) => {
 /** Set user notifications to read or unread */
 exports.updateNotification = async (req, res) => {
   try {
-    if (!isArray(req.body.notificationArr)) {
+    if (!isArray(req.body.notificationIdArr)) {
       return res.status(400).json({
         message:
           'Invalid data format received to remove notification/s. Please contact web administrator.',
       });
     }
 
-    await NotificationController.updateNotification(req, res, next);
+    await NotificationController.updateNotification(req);
 
     res.status(200).json({ message: 'Notification updated!' });
   } catch (error) {
@@ -664,7 +664,7 @@ exports.updateNotification = async (req, res) => {
 
 exports.removeNotifications = async (req, res) => {
   try {
-    if (!isArray(req.body.notificationArr)) {
+    if (!isArray(req.body.notificationIdArr)) {
       return res.status(400).json({
         message:
           'Invalid data format received to remove notification/s. Please contact web administrator.',
@@ -675,12 +675,12 @@ exports.removeNotifications = async (req, res) => {
       { _id: req.userData.userId },
       {
         $pullAll: {
-          notifications: [req.body.notificationArr],
+          notifications: [req.body.notificationIdArr],
         },
       }
     );
 
-    await NotificationController.deleteNotification(req, res, next);
+    await NotificationController.deleteNotification(req);
 
     res.status(200).json({ message: 'Notification removed!' });
   } catch (error) {

@@ -29,7 +29,7 @@ router.put('/pwd/me', checkAuth, UserController.updateUserPassword);
 router.put('/detail/me', checkAuth, UserController.updateUserDetails);
 
 // Update notifications
-router.post(
+router.put(
   '/notifications/update',
   checkAuth,
   UserController.updateNotification

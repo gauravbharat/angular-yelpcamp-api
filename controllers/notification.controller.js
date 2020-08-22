@@ -33,33 +33,33 @@ exports.createNotification = async (newNotification) => {
   }
 };
 
-exports.updateNotification = async (req, res, next) => {
+exports.updateNotification = async (req) => {
   try {
     await Notification.updateMany(
       {
         _id: {
-          $in: [req.body.notificationArr],
+          $in: [req.body.notificationIdArr],
         },
       },
-      { isRead: req.body.isRead }
+      { isRead: req.body.isSetRead }
     );
 
-    next();
+    return;
   } catch (error) {
     console.log('notifications update error', error);
     throw new Error('Error updating notifications on the server!');
   }
 };
 
-exports.deleteNotification = async (req, res, next) => {
+exports.deleteNotification = async (req) => {
   try {
     await Notification.deleteMany({
       _id: {
-        $in: [req.body.notificationArr],
+        $in: [req.body.notificationIdArr],
       },
     });
 
-    next();
+    return;
   } catch (error) {
     console.log('notifications delete error', error);
     throw new Error('Error deleting notifications from the server!');
