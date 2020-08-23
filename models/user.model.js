@@ -33,6 +33,18 @@ let userSchema = new mongoose.Schema({
   isPublisher: { type: Boolean, default: false },
   isRequestedAdmin: { type: Boolean, default: false },
   isSuperAdmin: { type: Boolean, default: false },
+  enableNotifications: {
+    newCampground: { type: Boolean, default: true },
+    newComment: { type: Boolean, default: false },
+    newFollower: { type: Boolean, default: true },
+  },
+  enableNotificationEmails: {
+    system: { type: Boolean, default: true },
+    newCampground: { type: Boolean, default: true },
+    newComment: { type: Boolean, default: false },
+    newFollower: { type: Boolean, default: true },
+  },
+  showStatsDashboard: { type: Boolean, default: false },
 });
 
 /** Hash the plain text password before saving
@@ -47,6 +59,13 @@ userSchema.pre('save', async function (next) {
   // hash only on signup process or if user modifies the password
   if (user.isModified('password')) {
     user.password = await bcrypt.hash(user.password, 10);
+  }
+
+  if (
+    user.isModified('enableNotificationEmails.system') &&
+    user.enableNotificationEmails.system
+  ) {
+    throw new Error('System email notifications must remain enabled!');
   }
 
   // Proceed with execution of next line of code

@@ -75,6 +75,18 @@ exports.registerUser = async (req, res) => {
         isPublisher: newUser.isPublisher,
         isRequestedAdmin: newUser.isRequestedAdmin,
         isSuperAdmin: newUser.isSuperAdmin,
+        enableNotifications: {
+          newCampground: newUser.enableNotifications.newCampground,
+          newComment: newUser.enableNotifications.newComment,
+          newFollower: newUser.enableNotifications.newFollower,
+        },
+        enableNotificationEmails: {
+          system: newUser.enableNotificationEmails.system,
+          newCampground: newUser.enableNotificationEmails.newCampground,
+          newComment: newUser.enableNotificationEmails.newComment,
+          newFollower: newUser.enableNotificationEmails.newFollower,
+        },
+        showStatsDashboard: newUser.showStatsDashboard,
         token,
         expiresIn: 3600,
       },
@@ -97,16 +109,25 @@ exports.registerUser = async (req, res) => {
       process: EmailHandler.PROCESS_NEW_USER,
       textOnly: false,
       emailTo: req.body.email,
-      emailSubject: `Angular-YelpCamp: Welcome!`,
-      emailBody: `<h1>Hello, ${req.body.firstname}!</h1>
+      emailSubject: `Welcome to Angular-YelpCamp!`,
+      emailBody: `<div style="width: 60%; margin: 50px auto;">
+      <h2>Greetings, ${req.body.firstnamee}!</h2>
       <br />
-      <h3>We are glad you chose to be a part of our <a href="${process.env.CLIENT_URL}" target="_blank">Angular-YelpCamp community.</a></h3>
+    
+      <h3>
+        We are glad you chose to be a part of our
+        <a href="${process.env.CLIENT_URL}" target="_blank"
+          >Angular-YelpCamp community.</a
+        >
+      </h3>
       <br />
+    
       <p>
-        Feel free to explore fellow member campgrounds, post your own camps or let the
-        members know what you think about their camps!
+        Feel free to explore fellow member campgrounds, post your own camps or let
+        the members know what you think about their camps!
       </p>
       <br />
+    
       <hr />
       <p>For your records, your registration details are -</p>
       <ul>
@@ -115,13 +136,22 @@ exports.registerUser = async (req, res) => {
         <li>username: ${req.body.firstname}</li>
         <li>username: ${req.body.lastname}</li>
       </ul>
+      <h4>
+        To manage your information,
+        <a href="${process.env.CLIENT_URL}/user/current" target="_blank"
+          >click here</a
+        >
+      </h4>
       <hr />
       <br />
-      
+    
       <h3>Warm welcome, and happy camping!!</h3>
       <br />
+    
       <h4>Best Regards,</h4>
-      <h4><strong>The Angular-YelpCamp Team &#9968;</strong></h4>`,
+      <h3>The Angular-YelpCamp Team ⛺️</h3>
+    </div>
+    `,
     });
   } catch (error) {
     console.log('error sending registration email', error);
@@ -165,6 +195,18 @@ exports.loginUser = async (req, res) => {
         isPublisher: user.isPublisher,
         isRequestedAdmin: user.isRequestedAdmin,
         isSuperAdmin: user.isSuperAdmin,
+        enableNotifications: {
+          newCampground: user.enableNotifications.newCampground,
+          newComment: user.enableNotifications.newComment,
+          newFollower: user.enableNotifications.newFollower,
+        },
+        enableNotificationEmails: {
+          system: user.enableNotificationEmails.system,
+          newCampground: user.enableNotificationEmails.newCampground,
+          newComment: user.enableNotificationEmails.newComment,
+          newFollower: user.enableNotificationEmails.newFollower,
+        },
+        showStatsDashboard: user.showStatsDashboard,
         token,
         expiresIn: 3600,
       },
@@ -382,23 +424,7 @@ exports.toggleFollowUser = async (req, res) => {
 
   try {
     /** When current user follows a fellow user, created a notification for that user */
-    const currentUser = await User.findById(followerUserId);
-
-    if (req.body.follow) {
-      let notification = await NotificationController.createNotification({
-        username: currentUser.username,
-        follower: {
-          id: currentUser._id,
-          followerAvatar: currentUser.avatar,
-          followingUserId: userToFollowId,
-        },
-        notificationType: NotificationController.notificationTypes.NEW_FOLLOWER,
-      });
-
-      action = {
-        $push: { followers: followerUserId, notifications: notification._id },
-      };
-    } else {
+    if (!req.body.follow) {
       /** If current user unfollows a fellow user =>
        * fetch fellow user notifications
        * filter to select only those where current user id matches with that of the follower
@@ -477,7 +503,7 @@ exports.toggleFollowUser = async (req, res) => {
     // console.log('user follow result', result, 'option', req.body.follow);
 
     if (result.n > 0) {
-      return res.status(200).json({
+      res.status(200).json({
         message: `User ${
           req.body.follow ? 'followed' : 'unfollowed'
         } successfully!`,
@@ -495,6 +521,105 @@ exports.toggleFollowUser = async (req, res) => {
       'Error in user follow update!',
       res
     );
+  }
+
+  try {
+    if (req.body.follow) {
+      const userToFollow = await User.findById(userToFollowId);
+
+      if (userToFollow) {
+        const currentUser = await User.findById(followerUserId);
+
+        // check that user opted to receive in-app follower notifications
+        if (userToFollow.enableNotifications.newFollower) {
+          let notification = await NotificationController.createNotification({
+            username: currentUser.username,
+            follower: {
+              id: currentUser._id,
+              followerAvatar: currentUser.avatar,
+              followingUserId: userToFollowId,
+            },
+            notificationType:
+              NotificationController.notificationTypes.NEW_FOLLOWER,
+          });
+
+          if (notification) {
+            await userToFollow.notifications.push(notification);
+            await userToFollow.save();
+          }
+        }
+
+        // check that user opted to receive new follower emails
+        if (userToFollow.enableNotificationEmails.newFollower) {
+          // send password reset link to user
+          await EmailHandler.sendEmail({
+            process: EmailHandler.PROCESS_NEW_FOLLOWER,
+            textOnly: false,
+            emailTo: userToFollow.email,
+            emailSubject: `Angular-YelpCamp: Your have a new follower!`,
+            emailBody: `
+            <div style="width: 60%; margin: 50px auto;">
+  <h2>Hey, ${userToFollow.firstName}!</h2>
+  <br />
+
+  <h2>
+    You have a new follower -
+  </h2>
+  <br />
+  <hr />
+  <div>
+    <span style="display: flex; justify-content: flex-start;">
+      <img
+        style="
+          width: 100px;
+          height: 100px;
+          object-fit: cover;
+          overflow: hidden;
+          border-radius: 50%;
+        "
+        src="${currentUser.avatar}"
+        alt="${currentUser.username}"
+      />
+      &nbsp;&nbsp;
+      <h2>${currentUser.username}</h2>
+    </span>
+  </div>
+  <hr />
+  <br />
+
+  <h4>
+    To see complete user profile,
+    <a
+      href="${process.env.CLIENT_URL}/user/other/${currentUser._id}"
+      target="_blank"
+      >click here</a
+    >
+  </h4>
+  <h4>
+    To see all notifications,
+    <a href="${process.env.CLIENT_URL}/user/notifications" target="_blank"
+      >click here</a
+    >
+  </h4>
+  <h4>
+    To manage notifications,
+    <a href="${process.env.CLIENT_URL}/user/current" target="_blank"
+      >click here</a
+    >
+  </h4>
+  <br />
+
+  <h4>Happy camping, and keep posting!</h4>
+
+  <h4>Best Regards,</h4>
+  <h3>The Angular-YelpCamp Team ⛺️</h3>
+</div>`,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.log('error updating new follow notifications', error);
   }
 };
 
@@ -600,7 +725,7 @@ exports.updateUserDetails = async (req, res) => {
   let response = await validateIdentifier(
     PROCESS_USER,
     'change-user-details',
-    req.body.userId,
+    req.body.userData.userId,
     res
   );
 
@@ -611,9 +736,9 @@ exports.updateUserDetails = async (req, res) => {
   let userId = response.id;
 
   try {
-    const firstName = req.body.firstname.trim();
-    const lastName = req.body.lastname.trim();
-    const email = req.body.email.trim();
+    const firstName = req.body.userData.firstname.trim();
+    const lastName = req.body.userData.lastname.trim();
+    const email = req.body.userData.email.trim();
 
     if (!firstName || !lastName || !email) {
       return res.status(400).json({ message: 'Invalid input received!' });
@@ -621,7 +746,24 @@ exports.updateUserDetails = async (req, res) => {
 
     let result = await User.updateOne(
       { _id: userId },
-      { firstName, lastName, email }
+      {
+        firstName,
+        lastName,
+        email,
+        showStatsDashboard: req.body.userData.showStatsDashboard,
+        'enableNotifications.newCampground':
+          req.body.userData.enableNotifications.newCampground,
+        'enableNotifications.newComment':
+          req.body.userData.enableNotifications.newComment,
+        'enableNotifications.newFollower':
+          req.body.userData.enableNotifications.newFollower,
+        'enableNotificationEmails.newCampground':
+          req.body.userData.enableNotificationEmails.newCampground,
+        'enableNotificationEmails.newComment':
+          req.body.userData.enableNotificationEmails.newComment,
+        'enableNotificationEmails.newFollower':
+          req.body.userData.enableNotificationEmails.newFollower,
+      }
     );
 
     if (result.n > 0) {

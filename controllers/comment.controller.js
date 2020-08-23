@@ -1,6 +1,7 @@
 const Campground = require('../models/campground.model');
 const Comment = require('../models/comment.model');
 const User = require('../models/user.model');
+const EmailHandler = require('../utils/email.util');
 
 const NotificationController = require('./notification.controller');
 
@@ -90,19 +91,91 @@ exports.createComment = async (req, res) => {
 
       // User may or may not exist
       if (campgroundAuthor) {
-        let notification = await NotificationController.createNotification({
-          campgroundId: foundCampground._id,
-          commentId: newComment._id,
-          campgroundName: foundCampground.name,
-          userId: req.body.userId,
-          username: req.body.username,
-          notificationType:
-            NotificationController.notificationTypes.NEW_COMMENT,
-        });
+        // check that user opted to receive in-app comment notifications
+        if (campgroundAuthor.enableNotifications.newComment) {
+          let notification = await NotificationController.createNotification({
+            campgroundId: foundCampground._id,
+            commentId: newComment._id,
+            campgroundName: foundCampground.name,
+            userId: req.body.userId,
+            username: req.body.username,
+            notificationType:
+              NotificationController.notificationTypes.NEW_COMMENT,
+          });
 
-        if (notification) {
-          await campgroundAuthor.notifications.push(notification);
-          await campgroundAuthor.save();
+          if (notification) {
+            await campgroundAuthor.notifications.push(notification);
+            await campgroundAuthor.save();
+          }
+        }
+
+        // check that user opted to receive new comment emails
+        if (campgroundAuthor.enableNotificationEmails.newComment) {
+          // send password reset link to user
+          await EmailHandler.sendEmail({
+            process: EmailHandler.PROCESS_NEW_COMMENT,
+            textOnly: false,
+            emailTo: campgroundAuthor.email,
+            emailSubject: `Angular-YelpCamp: Your campground ${foundCampground.name} has a new comment!`,
+            emailBody: `
+            <div style="width: 60%; margin: 50px auto;">
+  <h2>Greetings, ${campgroundAuthor.firstName}!</h2>
+  <br />
+
+  <h2>
+    ${req.body.username} just commented on your campground
+    ${foundCampground.name} -
+  </h2>
+  <br />
+  <hr />
+  <div>
+    <span style="display: flex; justify-content: flex-start;">
+      <img
+        style="
+          width: 50px;
+          height: 50px;
+          object-fit: cover;
+          overflow: hidden;
+          border-radius: 50%;
+        "
+        src="${req.body.userAvatar}"
+        alt="${req.body.username}"
+      />
+      &nbsp;&nbsp;
+      <h3>${req.body.username}</h3>
+    </span>
+
+    <h3><i>${req.body.text}</i></h3>
+  </div>
+  <hr />
+  <br />
+
+  <h4>
+    To visit campground,
+    <a href="${process.env.CLIENT_URL}/campgrounds/show/${foundCampground._id}" target="_blank"
+      >click here</a
+    >
+  </h4>
+  <h4>
+    To see all notifications,
+    <a href="${process.env.CLIENT_URL}/user/notifications" target="_blank"
+      >click here</a
+    >
+  </h4>
+  <h4>
+    To manage notifications,
+    <a href="${process.env.CLIENT_URL}/user/current" target="_blank"
+      >click here</a
+    >
+  </h4>
+  <br />
+
+  <h4>Happy Camping!</h4>
+
+  <h4>Best Regards,</h4>
+  <h3>The Angular-YelpCamp Team ⛺️</h3>
+</div>`,
+          });
         }
       }
     }

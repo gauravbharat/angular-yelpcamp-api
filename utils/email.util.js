@@ -9,6 +9,9 @@ emailHandler.PROCESS_RESET_PASSWORD_TOKEN_REQUEST =
   'PROCESS_RESET_PASSWORD_TOKEN_REQUEST';
 emailHandler.PROCESS_RESET_PASSWORD_CONFIRMATION =
   'PROCESS_RESET_PASSWORD_CONFIRMATION';
+emailHandler.PROCESS_NEW_COMMENT = 'PROCESS_NEW_COMMENT';
+emailHandler.PROCESS_NEW_CAMPGROUND = 'PROCESS_NEW_CAMPGROUND';
+emailHandler.PROCESS_NEW_FOLLOWER = 'PROCESS_NEW_FOLLOWER';
 
 emailHandler.sendEmail = async (...props) => {
   try {
@@ -22,7 +25,7 @@ emailHandler.sendEmail = async (...props) => {
 
     let mailOptions = {
       to: props[0].emailTo,
-      from: process.env.GMAILID,
+      from: `"Angular-YelpCamp ⛺" <${process.env.GMAILID}>`,
       subject: props[0].emailSubject,
     };
 
@@ -32,7 +35,8 @@ emailHandler.sendEmail = async (...props) => {
       mailOptions.html = props[0].emailBody;
     }
 
-    await smtpTransport.sendMail(mailOptions);
+    const result = await smtpTransport.sendMail(mailOptions);
+    return;
   } catch (error) {
     throw new Error(`Error sending email for ${props[0].process}`);
   }

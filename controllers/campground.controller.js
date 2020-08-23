@@ -3,6 +3,7 @@ const Campground = require('../models/campground.model');
 const User = require('../models/user.model');
 const { Amenities } = require('../models/amenities.model');
 const chalk = require('../utils/chalk.util');
+const EmailHandler = require('../utils/email.util');
 
 const NotificationController = require('./notification.controller');
 
@@ -205,17 +206,88 @@ exports.createCampground = async (req, res) => {
 
       if (campgroundAuthor.followers && campgroundAuthor.followers.length > 0) {
         await campgroundAuthor.followers.forEach(async (follower) => {
-          let notification = await NotificationController.createNotification({
-            campgroundId: addedCampground._id,
-            campgroundName: addedCampground.name,
-            userId: req.userData.userId,
-            username: req.userData.username,
-            notificationType:
-              NotificationController.notificationTypes.NEW_CAMPGROUND,
-          });
+          // check that follower opted to receive in-app camp notifications
+          if (follower.enableNotifications.newCampground) {
+            let notification = await NotificationController.createNotification({
+              campgroundId: addedCampground._id,
+              campgroundName: addedCampground.name,
+              userId: req.userData.userId,
+              username: req.userData.username,
+              notificationType:
+                NotificationController.notificationTypes.NEW_CAMPGROUND,
+            });
 
-          await follower.notifications.push(notification);
-          await follower.save();
+            await follower.notifications.push(notification);
+            await follower.save();
+          }
+
+          // check that follower opted to receive new camp emails
+          if (follower.enableNotificationEmails.newCampground) {
+            await EmailHandler.sendEmail({
+              process: EmailHandler.PROCESS_NEW_CAMPGROUND,
+              textOnly: false,
+              emailTo: follower.email,
+              emailSubject: `Angular-YelpCamp: A new campground "${addedCampground.name}" has a been posted!`,
+              emailBody: `
+              <div style="width: 60%; margin: 50px auto;">
+              <h2>Hey, ${follower.firstName}!</h2>
+              <br />
+            
+              <h2>
+                A user you follow, ${campgroundAuthor.username}, just posted a new
+                campground "${addedCampground.name}" -
+              </h2>
+              <br />
+              <hr />
+              <div
+                  style="text-align: center;"
+              >
+                <img
+                  style="
+                    width: 700px;
+                    height: auto;
+                    object-fit: cover;
+                    overflow: hidden;
+                    border-radius: 5%;
+                  "
+                  src="${addedCampground.image}"
+                  alt="${addedCampground.name}"
+                />
+                <h3>Location: ${addedCampground.location}</h3>
+                <h3>Description: ${addedCampground.description}</h3>
+              </div>
+              <hr />
+              <br />
+            
+              <h4>
+                To visit campground,
+                <a
+                  href="${process.env.CLIENT_URL}/campgrounds/show/${addedCampground._id}"
+                  target="_blank"
+                  >click here</a
+                >
+              </h4>
+              <h4>
+                To see all notifications,
+                <a href="${process.env.CLIENT_URL}/user/notifications" target="_blank"
+                  >click here</a
+                >
+              </h4>
+              <h4>
+                To manage notifications,
+                <a href="${process.env.CLIENT_URL}/user/current" target="_blank"
+                  >click here</a
+                >
+              </h4>
+              <br />
+            
+              <h4>Happy Camping!</h4>
+            
+              <h4>Best Regards,</h4>
+              <h3>The Angular-YelpCamp Team ⛺️</h3>
+            </div>`,
+            });
+          }
         });
       }
     }
