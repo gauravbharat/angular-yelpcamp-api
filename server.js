@@ -67,6 +67,18 @@ io.on('connection', (socket) => {
   socket.on('delete-comment', (data) => {
     io.emit('delete-comment', { campgroundId: data.campgroundId });
   });
+
+  socket.on('new-campground', (data) => {
+    io.emit('new-campground', { campgroundId: data.campgroundId });
+  });
+
+  socket.on('edit-campground', (data) => {
+    io.emit('edit-campground', { campgroundId: data.campgroundId });
+  });
+
+  socket.on('delete-campground', (data) => {
+    io.emit('delete-campground', { campgroundId: data.campgroundId });
+  });
 });
 
 server.on('error', onError);
