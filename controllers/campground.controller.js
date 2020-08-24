@@ -85,10 +85,8 @@ exports.getAllCampgrounds = async (req, res) => {
   }
 
   try {
-    const campgrounds = await campgroundQuery
-      .populate('amenities')
-      .populate('comments')
-      .exec();
+    /** 24082020 - Gaurav - Removed populating comments, retrospecitive to front-end change */
+    const campgrounds = await campgroundQuery.populate('amenities').exec();
     const totalCampgroundsCount = await campgroundsCount;
 
     // console.log(campgrounds);

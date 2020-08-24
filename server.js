@@ -48,6 +48,27 @@ const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 const server = http.createServer(app);
+
+/** 24082020 - Gaurav - add server to socket */
+const io = require('socket.io')(server);
+
+io.on('connection', (socket) => {
+  console.log('client-UI connected');
+  // socket.emit('server-message', { msg: 'hey how are ya' });
+
+  socket.on('new-comment', (data) => {
+    io.emit('new-comment', { campgroundId: data.campgroundId });
+  });
+
+  socket.on('edit-comment', (data) => {
+    io.emit('edit-comment', { campgroundId: data.campgroundId });
+  });
+
+  socket.on('delete-comment', (data) => {
+    io.emit('delete-comment', { campgroundId: data.campgroundId });
+  });
+});
+
 server.on('error', onError);
 server.on('listening', onListening);
 server.listen(port);
