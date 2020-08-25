@@ -49,35 +49,38 @@ app.set('port', port);
 
 const server = http.createServer(app);
 
-/** 24082020 - Gaurav - add server to socket */
+/** 24082020 - Gaurav - add server to socket
+ * use api namespace for this socket connection
+ */
 const io = require('socket.io')(server);
+const api = io.of('/api');
 
-io.on('connection', (socket) => {
+api.on('connection', (socket) => {
   console.log('client-UI connected');
   // socket.emit('server-message', { msg: 'hey how are ya' });
 
   socket.on('new-comment', (data) => {
-    io.emit('new-comment', { campgroundId: data.campgroundId });
+    api.emit('new-comment', { campgroundId: data.campgroundId });
   });
 
   socket.on('edit-comment', (data) => {
-    io.emit('edit-comment', { campgroundId: data.campgroundId });
+    api.emit('edit-comment', { campgroundId: data.campgroundId });
   });
 
   socket.on('delete-comment', (data) => {
-    io.emit('delete-comment', { campgroundId: data.campgroundId });
+    api.emit('delete-comment', { campgroundId: data.campgroundId });
   });
 
   socket.on('new-campground', (data) => {
-    io.emit('new-campground', { campgroundId: data.campgroundId });
+    api.emit('new-campground', { campgroundId: data.campgroundId });
   });
 
   socket.on('edit-campground', (data) => {
-    io.emit('edit-campground', { campgroundId: data.campgroundId });
+    api.emit('edit-campground', { campgroundId: data.campgroundId });
   });
 
   socket.on('delete-campground', (data) => {
-    io.emit('delete-campground', { campgroundId: data.campgroundId });
+    api.emit('delete-campground', { campgroundId: data.campgroundId });
   });
 });
 
