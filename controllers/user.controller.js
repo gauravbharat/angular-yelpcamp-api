@@ -86,7 +86,7 @@ exports.registerUser = async (req, res) => {
           newComment: newUser.enableNotificationEmails.newComment,
           newFollower: newUser.enableNotificationEmails.newFollower,
         },
-        showStatsDashboard: newUser.showStatsDashboard,
+        hideStatsDashboard: newUser.hideStatsDashboard,
         token,
         expiresIn: 3600,
       },
@@ -206,7 +206,7 @@ exports.loginUser = async (req, res) => {
           newComment: user.enableNotificationEmails.newComment,
           newFollower: user.enableNotificationEmails.newFollower,
         },
-        showStatsDashboard: user.showStatsDashboard,
+        hideStatsDashboard: user.hideStatsDashboard,
         token,
         expiresIn: 3600,
       },
@@ -750,7 +750,7 @@ exports.updateUserDetails = async (req, res) => {
         firstName,
         lastName,
         email,
-        showStatsDashboard: req.body.userData.showStatsDashboard,
+        hideStatsDashboard: req.body.userData.hideStatsDashboard,
         'enableNotifications.newCampground':
           req.body.userData.enableNotifications.newCampground,
         'enableNotifications.newComment':

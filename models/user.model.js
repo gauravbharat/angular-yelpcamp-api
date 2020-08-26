@@ -44,7 +44,7 @@ let userSchema = new mongoose.Schema({
     newComment: { type: Boolean, default: false },
     newFollower: { type: Boolean, default: true },
   },
-  showStatsDashboard: { type: Boolean, default: false },
+  hideStatsDashboard: { type: Boolean, default: false },
 });
 
 /** Hash the plain text password before saving

@@ -154,6 +154,32 @@ exports.getCampground = async (req, res) => {
   }
 };
 
+exports.getCampgroundsStats = async (req, res) => {
+  try {
+    const campgroundsCount = (await Campground.countDocuments()) | 0;
+    const usersCount = (await User.countDocuments()) | 0;
+    const contributorsCountArr = await Campground.distinct('author.id');
+
+    const contributorsCount = contributorsCountArr
+      ? contributorsCountArr.length
+      : 0;
+
+    res.status(200).json({
+      campgroundsCount,
+      usersCount,
+      contributorsCount,
+    });
+  } catch (error) {
+    return returnError(
+      'get-campgrounds-stats',
+      error,
+      500,
+      'Error getting campgrounds stats!',
+      res
+    );
+  }
+};
+
 exports.createCampground = async (req, res) => {
   let addedCampground;
 
