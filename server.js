@@ -2,6 +2,7 @@ require('dotenv').config();
 const app = require('./app');
 const debug = require('debug')('node-angular');
 const http = require('http');
+const { isValidObjectId } = require('mongoose');
 
 const normalizePort = (val) => {
   var port = parseInt(val, 10);
@@ -55,10 +56,33 @@ const server = http.createServer(app);
 const io = require('socket.io')(server);
 const api = io.of('/api');
 
-api.on('connection', (socket) => {
-  console.log('client-UI connected');
-  // socket.emit('server-message', { msg: 'hey how are ya' });
+api.use(async (socket, next) => {
+  // console.log(socket.request.headers);
 
+  // if (isValid(socket.request)) {
+  next();
+  // } else {
+  //   next(new Error('invalid socket request'));
+  // }
+});
+
+api.on('connection', (socket) => {
+  /** Join specific room */
+  socket.on('join', (data) => {
+    socket.join(data.roomId);
+    api.in(data.roomId).emit('new-user-joined', data);
+  });
+
+  socket.on('chat-user-left', (data) => {
+    socket.leave(data.roomId);
+    api.to(data.roomId).emit('chat-user-left', data);
+  });
+
+  socket.on('new-chat-message', (data) => {
+    api.in(data.roomId).emit('new-chat-message', data);
+  });
+
+  /** App refresh specific socket io events */
   socket.on('new-comment', (data) => {
     api.emit('new-comment', { campgroundId: data.campgroundId });
   });
@@ -82,6 +106,16 @@ api.on('connection', (socket) => {
   socket.on('delete-campground', (data) => {
     api.emit('delete-campground', { campgroundId: data.campgroundId });
   });
+
+  // socket.on('disconnecting', () => {
+  //   const rooms = Object.keys(socket.rooms);
+  //   console.log('inside disconnecting: rooms', rooms);
+  // });
+
+  // socket.on('disconnect', () => {
+  //   const rooms = Object.keys(socket.rooms);
+  //   console.log('inside disconnect: rooms', rooms);
+  // });
 });
 
 server.on('error', onError);
