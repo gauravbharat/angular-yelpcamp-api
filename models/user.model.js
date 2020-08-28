@@ -37,6 +37,7 @@ let userSchema = new mongoose.Schema({
     newCampground: { type: Boolean, default: true },
     newComment: { type: Boolean, default: false },
     newFollower: { type: Boolean, default: true },
+    newCommentLike: { type: Boolean, default: false },
   },
   enableNotificationEmails: {
     system: { type: Boolean, default: true },

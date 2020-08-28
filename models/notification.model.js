@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+/** userId and and username, the top level fields, corresponds to the one creating this notification */
 let notificationSchema = new mongoose.Schema({
   username: { type: String, required: true },
   campgroundId: { type: String },
@@ -26,6 +27,7 @@ let notificationSchema = new mongoose.Schema({
       ref: 'User',
     },
   },
+  isCommentLike: { type: Boolean, default: false },
 });
 
 /*

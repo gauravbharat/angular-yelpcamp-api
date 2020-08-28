@@ -79,6 +79,7 @@ exports.registerUser = async (req, res) => {
           newCampground: newUser.enableNotifications.newCampground,
           newComment: newUser.enableNotifications.newComment,
           newFollower: newUser.enableNotifications.newFollower,
+          newCommentLike: user.enableNotifications.newCommentLike,
         },
         enableNotificationEmails: {
           system: newUser.enableNotificationEmails.system,
@@ -199,6 +200,7 @@ exports.loginUser = async (req, res) => {
           newCampground: user.enableNotifications.newCampground,
           newComment: user.enableNotifications.newComment,
           newFollower: user.enableNotifications.newFollower,
+          newCommentLike: user.enableNotifications.newCommentLike,
         },
         enableNotificationEmails: {
           system: user.enableNotificationEmails.system,
@@ -653,6 +655,17 @@ exports.updateUserAvatar = async (req, res) => {
         { 'author.id': userId },
         { 'author.avatar': avatar }
       );
+
+      await Comment.updateMany(
+        { 'likes.$.id': userId },
+        { 'likes.$.avatar': avatar }
+      );
+
+      await Notification.updateMany(
+        { 'follower.id': userId },
+        { 'follower.followerAvatar': avatar }
+      );
+
       res.status(200).json({ message: 'User avatar updated!' });
     } else {
       res.status(401).json({ message: 'user avatar update failed!' });
@@ -757,6 +770,8 @@ exports.updateUserDetails = async (req, res) => {
           req.body.userData.enableNotifications.newComment,
         'enableNotifications.newFollower':
           req.body.userData.enableNotifications.newFollower,
+        'enableNotifications.newCommentLike':
+          req.body.userData.enableNotifications.newCommentLike,
         'enableNotificationEmails.newCampground':
           req.body.userData.enableNotificationEmails.newCampground,
         'enableNotificationEmails.newComment':

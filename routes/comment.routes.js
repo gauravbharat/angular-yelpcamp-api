@@ -13,4 +13,7 @@ router.delete(
   CommentController.deleteComment
 );
 
+// Review comment as 'Helpful' or revert last review
+router.post('/:commentId/like', checkAuth, CommentController.reviewComment);
+
 module.exports = router;

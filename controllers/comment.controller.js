@@ -1,6 +1,7 @@
 const Campground = require('../models/campground.model');
 const Comment = require('../models/comment.model');
 const User = require('../models/user.model');
+const Notification = require('../models/notification.model');
 const EmailHandler = require('../utils/email.util');
 
 const NotificationController = require('./notification.controller');
@@ -321,7 +322,7 @@ exports.deleteComment = async (req, res) => {
         return returnError(
           subprocess,
           error,
-          404,
+          401,
           'Unauthorized for deleting comment!',
           res
         );
@@ -356,6 +357,8 @@ exports.deleteComment = async (req, res) => {
     );
 
     if (result.n > 0) {
+      await Notification.deleteMany({ commentId });
+
       return res.status(200).json({
         message: 'Comment removed and campground updated successfully!',
       });
@@ -372,5 +375,139 @@ exports.deleteComment = async (req, res) => {
       'Error updating campground for deleted comment!',
       res
     );
+  }
+};
+
+exports.reviewComment = async (req, res) => {
+  let response = await validateIdentifier(
+    PROCESS_COMMENT,
+    'review-comment',
+    req.params.commentId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
+  }
+
+  let commentId = response.id;
+
+  response = await validateIdentifier(
+    PROCESS_CAMPGROUND,
+    'review-comment',
+    req.params.campgroundId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
+  }
+
+  let campgroundId = response.id;
+
+  let foundComment, foundUserLike, updateObj;
+
+  try {
+    foundComment = await Comment.findById(commentId);
+
+    if (!foundComment) {
+      return res.status(404).json({ message: 'Comment not found!' });
+    }
+
+    // /** No like of own comments */
+    // if (req.userData.userId === foundComment.author.id) {
+    //   return res
+    //     .status(418)
+    //     .json({ message: "Liking own comments, eh?! :) Can't, sorry!" });
+    // }
+
+    foundUserLike = foundComment.likes.some((like) => {
+      return like.id.equals(req.userData.userId);
+    });
+
+    /** if found, user wish to unlike the comment */
+    if (foundUserLike) {
+      updateObj = {
+        $pull: {
+          likes: {
+            id: req.userData.userId,
+          },
+        },
+      };
+    } else {
+      updateObj = {
+        $push: {
+          likes: {
+            $each: [
+              {
+                id: req.userData.userId,
+                username: req.userData.username,
+                avatar: req.body.currentUserAvatar,
+              },
+            ],
+          },
+        },
+      };
+    }
+
+    const result = await Comment.updateOne({ _id: commentId }, updateObj);
+
+    if (result.n > 0) {
+      return res.status(200).json({
+        message: 'Comment likes updated!',
+      });
+    } else {
+      return res.status(401).json({
+        message: 'Error updating comment likes!',
+      });
+    }
+  } catch (error) {
+    return returnError(
+      'review-comment',
+      error,
+      500,
+      'Error reviewing comment!',
+      res
+    );
+  }
+
+  try {
+    if (foundUserLike) {
+      await Notification.deleteMany({
+        _id: foundComment._id,
+        isCommentLike: true,
+        notificationType:
+          NotificationController.notificationTypes.NEW_COMMENT_LIKE,
+      });
+    } else {
+      //
+      const foundCampground = await Campground.findById(campgroundId);
+      const commentAuthor = await User.findById(foundComment.author.id);
+
+      // User may or may not exist
+      if (commentAuthor) {
+        // check that user opted to receive in-app comment notifications
+        if (commentAuthor.enableNotifications.newCommentLike) {
+          let notification = await NotificationController.createNotification({
+            campgroundId: foundCampground._id,
+            commentId: foundComment._id,
+            campgroundName: foundCampground.name,
+            isCommentLike: true,
+            userId: req.userData.userId,
+            username: req.userData.username,
+            notificationType:
+              NotificationController.notificationTypes.NEW_COMMENT_LIKE,
+          });
+
+          if (notification) {
+            await commentAuthor.notifications.push(notification);
+            await commentAuthor.save();
+          }
+        }
+      }
+    }
+  } catch (error) {
+    //do nothing
+    console.log('review-comment', 'error sending notificaiton', error);
   }
 };

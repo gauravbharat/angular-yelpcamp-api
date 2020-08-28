@@ -13,6 +13,19 @@ let commentSchema = new mongoose.Schema({
   created: { type: Date, default: Date.now },
   edited: { type: Date, default: Date.now },
   isEdited: { type: Boolean, default: false },
+  likes: [
+    new mongoose.Schema(
+      {
+        id: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        username: String,
+        avatar: String,
+      },
+      { _id: false }
+    ),
+  ],
 });
 
 module.exports = mongoose.model('Comment', commentSchema);

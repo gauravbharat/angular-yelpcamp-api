@@ -5,6 +5,7 @@
   New Comment                 1
   User Admin Request          2
   New Follower                3
+  New Like for comment        4
  */
 
 const Notification = require('../models/notification.model');
@@ -13,6 +14,7 @@ const notificationTypeText = [
   'NEW_COMMENT',
   'USER_ADMIN_REQUEST',
   'NEW_FOLLOWER',
+  'NEW_COMMENT_LIKE',
 ];
 
 exports.notificationTypes = {
@@ -20,6 +22,7 @@ exports.notificationTypes = {
   NEW_COMMENT: 1,
   USER_ADMIN_REQUEST: 2,
   NEW_FOLLOWER: 3,
+  NEW_COMMENT_LIKE: 4,
 };
 
 exports.createNotification = async (newNotification) => {
