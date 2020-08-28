@@ -657,8 +657,18 @@ exports.updateUserAvatar = async (req, res) => {
       );
 
       await Comment.updateMany(
-        { 'likes.$.id': userId },
-        { 'likes.$.avatar': avatar }
+        {
+          likes: {
+            $elemMatch: {
+              id: userId,
+            },
+          },
+        },
+        {
+          $set: {
+            'likes.$.avatar': avatar,
+          },
+        }
       );
 
       await Notification.updateMany(

@@ -453,7 +453,7 @@ exports.reviewComment = async (req, res) => {
     const result = await Comment.updateOne({ _id: commentId }, updateObj);
 
     if (result.n > 0) {
-      return res.status(200).json({
+      res.status(200).json({
         message: 'Comment likes updated!',
       });
     } else {
@@ -473,8 +473,9 @@ exports.reviewComment = async (req, res) => {
 
   try {
     if (foundUserLike) {
-      await Notification.deleteMany({
-        _id: foundComment._id,
+      let result = await Notification.deleteMany({
+        commentId: foundComment._id,
+        userId: req.userData.userId,
         isCommentLike: true,
         notificationType:
           NotificationController.notificationTypes.NEW_COMMENT_LIKE,
