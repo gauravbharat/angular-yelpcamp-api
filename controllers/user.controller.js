@@ -79,7 +79,7 @@ exports.registerUser = async (req, res) => {
           newCampground: newUser.enableNotifications.newCampground,
           newComment: newUser.enableNotifications.newComment,
           newFollower: newUser.enableNotifications.newFollower,
-          newCommentLike: user.enableNotifications.newCommentLike,
+          newCommentLike: newUser.enableNotifications.newCommentLike,
         },
         enableNotificationEmails: {
           system: newUser.enableNotificationEmails.system,
