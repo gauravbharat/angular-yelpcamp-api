@@ -4,7 +4,8 @@
   "description": "A nodejs api to provide RESTful services to yelpcamp UI developed in Angular",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "node server.js",
+    "monitor": "nodemon server.js",
     "test": "DEBUG=* nodemon server.js"
   },
   "repository": {
