@@ -3,50 +3,53 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 // const passportLocalMongoose = require('passport-local-mongoose');
 
-let userSchema = new mongoose.Schema({
-  username: { type: String, unique: true, required: true },
-  password: String,
-  avatar: {
-    type: String,
-    default:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQJS3-GoTF9xqAIyRROWdTD8SUihnSdP5Ac2uPb6AzgGHHyeuuD',
-  },
-  firstName: String,
-  lastName: String,
-  email: { type: String, unique: true, required: true },
-  resetPasswordToken: String,
-  resetPasswordExpires: Date,
-  isAdmin: { type: Boolean, default: false },
-  notifications: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Notification',
+let userSchema = new mongoose.Schema(
+  {
+    username: { type: String, unique: true, required: true },
+    password: String,
+    avatar: {
+      type: String,
+      default:
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQJS3-GoTF9xqAIyRROWdTD8SUihnSdP5Ac2uPb6AzgGHHyeuuD',
     },
-  ],
-  followers: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+    firstName: String,
+    lastName: String,
+    email: { type: String, unique: true, required: true },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+    isAdmin: { type: Boolean, default: false },
+    notifications: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notification',
+      },
+    ],
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    created: { type: Date, default: Date.now },
+    isPublisher: { type: Boolean, default: false },
+    isRequestedAdmin: { type: Boolean, default: false },
+    isSuperAdmin: { type: Boolean, default: false },
+    enableNotifications: {
+      newCampground: { type: Boolean, default: true },
+      newComment: { type: Boolean, default: false },
+      newFollower: { type: Boolean, default: true },
+      newCommentLike: { type: Boolean, default: false },
     },
-  ],
-  created: { type: Date, default: Date.now },
-  isPublisher: { type: Boolean, default: false },
-  isRequestedAdmin: { type: Boolean, default: false },
-  isSuperAdmin: { type: Boolean, default: false },
-  enableNotifications: {
-    newCampground: { type: Boolean, default: true },
-    newComment: { type: Boolean, default: false },
-    newFollower: { type: Boolean, default: true },
-    newCommentLike: { type: Boolean, default: false },
+    enableNotificationEmails: {
+      system: { type: Boolean, default: true },
+      newCampground: { type: Boolean, default: true },
+      newComment: { type: Boolean, default: false },
+      newFollower: { type: Boolean, default: true },
+    },
+    hideStatsDashboard: { type: Boolean, default: false },
   },
-  enableNotificationEmails: {
-    system: { type: Boolean, default: true },
-    newCampground: { type: Boolean, default: true },
-    newComment: { type: Boolean, default: false },
-    newFollower: { type: Boolean, default: true },
-  },
-  hideStatsDashboard: { type: Boolean, default: false },
-});
+  { timestamps: true }
+);
 
 /** Hash the plain text password before saving
  * pre and post, eg. before and after
