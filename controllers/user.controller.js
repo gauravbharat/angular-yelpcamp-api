@@ -132,10 +132,10 @@ exports.registerUser = async (req, res) => {
       <hr />
       <p>For your records, your registration details are -</p>
       <ul>
-        <li>username: ${req.body.username}</li>
-        <li>username: ${req.body.email}</li>
-        <li>username: ${req.body.firstname}</li>
-        <li>username: ${req.body.lastname}</li>
+        <li>@username: ${req.body.username}</li>
+        <li>E-mail: ${req.body.email}</li>
+        <li>First Name: ${req.body.firstname}</li>
+        <li>Last Name: ${req.body.lastname}</li>
       </ul>
       <h4>
         To manage your information,
