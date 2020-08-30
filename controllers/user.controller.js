@@ -112,7 +112,7 @@ exports.registerUser = async (req, res) => {
       emailTo: req.body.email,
       emailSubject: `Welcome to Angular-YelpCamp!`,
       emailBody: `<div style="width: 60%; margin: 50px auto;">
-      <h2>Greetings, ${req.body.firstnamee}!</h2>
+      <h2>Greetings, ${req.body.firstname}!</h2>
       <br />
     
       <h3>
