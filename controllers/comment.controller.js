@@ -47,7 +47,7 @@ exports.createComment = async (req, res) => {
       subprocess,
       error,
       500,
-      'Error getting campground for creating comment!',
+      'Error getting campground for creating review!',
       res
     );
   }
@@ -62,20 +62,20 @@ exports.createComment = async (req, res) => {
 
     await newComment.save();
   } catch (error) {
-    return returnError(subprocess, error, 500, 'Error creating comment!', res);
+    return returnError(subprocess, error, 500, 'Error creating review!', res);
   }
 
   try {
     foundCampground.comments.push(newComment);
     await foundCampground.save();
 
-    res.status(200).json({ message: 'Comment added successfully!' });
+    res.status(200).json({ message: 'Review added successfully!' });
   } catch (error) {
     return returnError(
       subprocess,
       error,
       500,
-      'Error updating campground for new comment!',
+      'Error updating campground for new review!',
       res
     );
   }
@@ -119,14 +119,14 @@ exports.createComment = async (req, res) => {
             process: EmailHandler.PROCESS_NEW_COMMENT,
             textOnly: false,
             emailTo: campgroundAuthor.email,
-            emailSubject: `Angular-YelpCamp: Your campground ${foundCampground.name} has a new comment!`,
+            emailSubject: `Angular-YelpCamp: Your campground ${foundCampground.name} has a new review!`,
             emailBody: `
             <div style="width: 60%; margin: 50px auto;">
   <h2>Greetings, ${campgroundAuthor.firstName}!</h2>
   <br />
 
   <h2>
-    ${req.body.username} just commented on your campground
+    ${req.body.username} just reviewed your campground
     ${foundCampground.name} -
   </h2>
   <br />
@@ -227,14 +227,14 @@ exports.editComment = async (req, res) => {
     );
 
     if (result.n > 0) {
-      return res.status(200).json({ message: 'Comment updated successfully!' });
+      return res.status(200).json({ message: 'Review updated successfully!' });
     } else {
       return res
         .status(401)
-        .json({ message: 'Unauthorized to change comment!' });
+        .json({ message: 'Unauthorized to change review!' });
     }
   } catch (error) {
-    return returnError(subprocess, error, 500, 'Error editing comment!', res);
+    return returnError(subprocess, error, 500, 'Error editing review!', res);
   }
 };
 
@@ -325,7 +325,7 @@ exports.deleteComment = async (req, res) => {
           subprocess,
           error,
           401,
-          'Unauthorized for deleting comment!',
+          'Unauthorized for deleting review!',
           res
         );
       }
@@ -335,7 +335,7 @@ exports.deleteComment = async (req, res) => {
       subprocess,
       error,
       500,
-      'Error validating comment delete request!',
+      'Error validating review delete request!',
       res
     );
   }
@@ -346,10 +346,10 @@ exports.deleteComment = async (req, res) => {
     if (result.n <= 0) {
       return res
         .status(401)
-        .json({ message: 'Not authorized to delete this comment!' });
+        .json({ message: 'Not authorized to delete this review!' });
     }
   } catch (error) {
-    return returnError(subprocess, error, 500, 'Error deleting comment!', res);
+    return returnError(subprocess, error, 500, 'Error deleting review!', res);
   }
 
   try {
@@ -362,11 +362,11 @@ exports.deleteComment = async (req, res) => {
       await Notification.deleteMany({ commentId });
 
       return res.status(200).json({
-        message: 'Comment removed and campground updated successfully!',
+        message: 'Review removed and campground updated successfully!',
       });
     } else {
       return res.status(401).json({
-        message: 'Comment removed but campground not updated!',
+        message: 'Review removed but campground not updated!',
       });
     }
   } catch (error) {
@@ -374,16 +374,16 @@ exports.deleteComment = async (req, res) => {
       subprocess,
       error,
       500,
-      'Error updating campground for deleted comment!',
+      'Error updating campground for deleted review!',
       res
     );
   }
 };
 
-exports.reviewComment = async (req, res) => {
+exports.likeComment = async (req, res) => {
   let response = await validateIdentifier(
     PROCESS_COMMENT,
-    'review-comment',
+    'like-comment',
     req.params.commentId,
     res
   );
@@ -396,7 +396,7 @@ exports.reviewComment = async (req, res) => {
 
   response = await validateIdentifier(
     PROCESS_CAMPGROUND,
-    'review-comment',
+    'like-comment',
     req.params.campgroundId,
     res
   );
@@ -413,7 +413,7 @@ exports.reviewComment = async (req, res) => {
     foundComment = await Comment.findById(commentId);
 
     if (!foundComment) {
-      return res.status(404).json({ message: 'Comment not found!' });
+      return res.status(404).json({ message: 'Review not found!' });
     }
 
     foundUserLike = foundComment.likes.some((like) => {
@@ -449,19 +449,19 @@ exports.reviewComment = async (req, res) => {
 
     if (result.n > 0) {
       res.status(200).json({
-        message: 'Comment likes updated!',
+        message: 'Review likes updated!',
       });
     } else {
       return res.status(401).json({
-        message: 'Error updating comment likes!',
+        message: 'Error updating review likes!',
       });
     }
   } catch (error) {
     return returnError(
-      'review-comment',
+      'like-comment',
       error,
       500,
-      'Error reviewing comment!',
+      'Error liking comment!',
       res
     );
   }
@@ -505,6 +505,6 @@ exports.reviewComment = async (req, res) => {
     }
   } catch (error) {
     //do nothing
-    console.log('review-comment', 'error sending notificaiton', error);
+    console.log('like-comment', 'error sending notificaiton', error);
   }
 };
