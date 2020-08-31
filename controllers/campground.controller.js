@@ -368,27 +368,22 @@ exports.editCampground = async (req, res) => {
   }
 
   try {
-    const campround = await new Campground({
-      _id: req.body._id,
-      name: req.body.name,
-      price: req.body.price,
-      image,
-      location: req.body.location,
-      description: req.body.description,
-      author: {
-        id: req.userData.userId,
-        username: req.userData.username,
-      },
-      amenities:
-        typeof req.body.amenities === 'string'
-          ? JSON.parse(req.body.amenities)
-          : req.body.amenities,
-    });
-
+    /** 31082020 - Gaurav - new campground object erased the old one, including comments.
+     * Passed plain object instead */
     //using updateOne() method instead of findOneAndUpdate() because we don't need back the new document
     const result = await Campground.updateOne(
       { _id: campgroundId, 'author.id': req.userData.userId },
-      campround
+      {
+        name: req.body.name,
+        price: req.body.price,
+        image,
+        location: req.body.location,
+        description: req.body.description,
+        amenities:
+          typeof req.body.amenities === 'string'
+            ? JSON.parse(req.body.amenities)
+            : req.body.amenities,
+      }
     );
     // console.log(req.userData.userId);
     // console.log('edit campground result', result);

@@ -87,7 +87,9 @@ exports.createComment = async (req, res) => {
       4. update the notifications array for the campground author (user) 
     */
   try {
-    if (foundCampground.author.id !== req.body.userId) {
+    /** 31082020 - Gaurav - Suddenly userId comparison failed when db is access from cloud atlas,
+     * converted them to string before comparing */
+    if (String(foundCampground.author.id) !== String(req.body.userId)) {
       const campgroundAuthor = await User.findById(foundCampground.author.id);
 
       // User may or may not exist
@@ -413,13 +415,6 @@ exports.reviewComment = async (req, res) => {
     if (!foundComment) {
       return res.status(404).json({ message: 'Comment not found!' });
     }
-
-    // /** No like of own comments */
-    // if (req.userData.userId === foundComment.author.id) {
-    //   return res
-    //     .status(418)
-    //     .json({ message: "Liking own comments, eh?! :) Can't, sorry!" });
-    // }
 
     foundUserLike = foundComment.likes.some((like) => {
       return like.id.equals(req.userData.userId);
