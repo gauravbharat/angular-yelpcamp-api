@@ -476,28 +476,29 @@ exports.reviewComment = async (req, res) => {
           NotificationController.notificationTypes.NEW_COMMENT_LIKE,
       });
     } else {
-      //
-      const foundCampground = await Campground.findById(campgroundId);
-      const commentAuthor = await User.findById(foundComment.author.id);
+      if (String(req.userData.userId) !== String(foundComment.author.id)) {
+        const foundCampground = await Campground.findById(campgroundId);
+        const commentAuthor = await User.findById(foundComment.author.id);
 
-      // User may or may not exist
-      if (commentAuthor) {
-        // check that user opted to receive in-app comment notifications
-        if (commentAuthor.enableNotifications.newCommentLike) {
-          let notification = await NotificationController.createNotification({
-            campgroundId: foundCampground._id,
-            commentId: foundComment._id,
-            campgroundName: foundCampground.name,
-            isCommentLike: true,
-            userId: req.userData.userId,
-            username: req.userData.username,
-            notificationType:
-              NotificationController.notificationTypes.NEW_COMMENT_LIKE,
-          });
+        // User may or may not exist
+        if (commentAuthor) {
+          // check that user opted to receive in-app comment notifications
+          if (commentAuthor.enableNotifications.newCommentLike) {
+            let notification = await NotificationController.createNotification({
+              campgroundId: foundCampground._id,
+              commentId: foundComment._id,
+              campgroundName: foundCampground.name,
+              isCommentLike: true,
+              userId: req.userData.userId,
+              username: req.userData.username,
+              notificationType:
+                NotificationController.notificationTypes.NEW_COMMENT_LIKE,
+            });
 
-          if (notification) {
-            await commentAuthor.notifications.push(notification);
-            await commentAuthor.save();
+            if (notification) {
+              await commentAuthor.notifications.push(notification);
+              await commentAuthor.save();
+            }
           }
         }
       }
