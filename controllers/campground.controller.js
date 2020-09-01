@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Campground = require('../models/campground.model');
 const User = require('../models/user.model');
 const { Amenities } = require('../models/amenities.model');
+const { Countries } = require('../models/countries.model');
 const chalk = require('../utils/chalk.util');
 const EmailHandler = require('../utils/email.util');
 
@@ -34,6 +35,33 @@ const getCloudinaryImagePublicId = (strPath) => {
   return null;
 };
 
+exports.getAllCountries = async (req, res) => {
+  //No auth required to get this static data list
+  try {
+    const countriesList = await Countries.find();
+
+    if (countriesList) {
+      res.status(200).json({
+        message: 'Countries fetched successfully!',
+        countriesList,
+      });
+    } else {
+      res.status(204).json({
+        message: 'No Countries found, contact Angular-YelpCamp administrator!',
+        countriesList,
+      });
+    }
+  } catch (error) {
+    return returnError(
+      'get-all-Countries',
+      error,
+      500,
+      'Error fetching Countries!',
+      res
+    );
+  }
+};
+
 exports.getAllAmenities = async (req, res) => {
   //No auth required to get this static data list
   try {
@@ -47,7 +75,7 @@ exports.getAllAmenities = async (req, res) => {
     } else {
       res.status(204).json({
         message: 'No amenities found, contact Angular-YelpCamp administrator!',
-        amenitiesList,
+        amenitiesList: [],
       });
     }
   } catch (error) {
@@ -132,11 +160,9 @@ exports.getCampground = async (req, res) => {
 
   try {
     const campground = await Campground.findOne({ _id: campgroundId })
-      .populate('amenities')
       .populate('comments')
+      .populate('amenities')
       .exec();
-
-    // console.log(campground);
 
     if (campground) {
       res.status(200).json(campground);

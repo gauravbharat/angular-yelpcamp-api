@@ -1,51 +1,29 @@
 const mongoose = require('mongoose');
 const amenityModel = {};
 const chalk = require('../utils/chalk.util');
+const { amenitiesList } = require('./data/amenities.data');
 
-const amenitiesList = [
-  { name: 'Tents' },
-  { name: 'Yoga Classes' },
-  { name: 'Upgraded Yurts' },
-  { name: 'Communal Campground Kitchens' },
-  { name: 'Coffee Cafes' },
-  { name: 'Stargazing Tours' },
-  { name: 'Live Music' },
-  { name: 'Food Trucks' },
-  { name: 'Swimming Pool' },
-  { name: 'Breakfast' },
-  { name: 'Lunch' },
-  { name: 'Dinner' },
-  { name: 'Games' },
-  { name: 'Zip Lines' },
-  { name: 'Hayrides' },
-  { name: 'Game Rooms' },
-  { name: 'Craft Brewing & Bars' },
-  { name: 'Summer Movie Nights' },
-  { name: 'Rental Cabins & RVs' },
-  { name: 'Toilet Only' },
-  { name: 'Toilet & Shower' },
-  { name: 'Electrical Outlets' },
-  { name: 'Internet & WiFi' },
-  { name: 'Wildlife Safari' },
-  { name: 'Campfire' },
-  { name: 'Barbeque, Fire Rings, Grills' },
-  { name: 'Drinking Water' },
-  { name: 'Pets Allowed' },
-  { name: 'Signage' },
-];
-
-let amenitiesSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-});
+let amenitiesSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    group: { type: String, required: true },
+    majorVersion: { type: Number, default: 1 },
+  },
+  { timestamps: true }
+);
 
 amenityModel.Amenities = mongoose.model('Amenities', amenitiesSchema);
 
 amenityModel.populateAmenities = async () => {
   if ((await amenityModel.Amenities.countDocuments()) === 0) {
     try {
-      const result = await amenityModel.Amenities.collection.insertMany(
-        amenitiesList
-      );
+      for (let obj of amenitiesList) {
+        await amenityModel.Amenities.collection.insertOne({
+          name: obj.name,
+          group: obj.group,
+          majorVersion: 1,
+        });
+      }
     } catch (error) {
       chalk.logError('Error uploading amenities', error);
       // Let admin fix this error before starting the server

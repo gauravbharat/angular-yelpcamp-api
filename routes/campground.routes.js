@@ -14,6 +14,9 @@ router.get('/stats', CampgroundController.getCampgroundsStats);
 // Get all amenities
 router.get('/amenities', CampgroundController.getAllAmenities);
 
+// Get all countries
+router.get('/countries', CampgroundController.getAllCountries);
+
 // Get a single campground
 router.get('/:campgroundId', CampgroundController.getCampground);
 

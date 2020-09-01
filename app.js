@@ -6,6 +6,8 @@ const app = express();
 const expressSanitizer = require('express-sanitizer');
 
 const { populateAmenities } = require('./models/amenities.model');
+const { populateCountries } = require('./models/countries.model');
+const { populateHike } = require('./models/hike.model');
 
 const campgroundRoutes = require('./routes/campground.routes');
 const userRoutes = require('./routes/user.routes');
@@ -25,6 +27,8 @@ mongoose
   .then(() => {
     // Populate campground amenities if the collection is empty
     populateAmenities();
+    populateCountries();
+    populateHike();
   })
   .catch((error) => {
     chalk.logError('database connection error', error);
