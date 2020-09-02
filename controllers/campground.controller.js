@@ -3,6 +3,7 @@ const Campground = require('../models/campground.model');
 const User = require('../models/user.model');
 const { Amenities } = require('../models/amenities.model');
 const { Countries } = require('../models/countries.model');
+const { Hike } = require('../models/hike.model');
 const chalk = require('../utils/chalk.util');
 const EmailHandler = require('../utils/email.util');
 
@@ -35,55 +36,49 @@ const getCloudinaryImagePublicId = (strPath) => {
   return null;
 };
 
-exports.getAllCountries = async (req, res) => {
+exports.getMiscStaticData = async (req, res) => {
   //No auth required to get this static data list
   try {
     const countriesList = await Countries.find();
-
-    if (countriesList) {
-      res.status(200).json({
-        message: 'Countries fetched successfully!',
-        countriesList,
-      });
-    } else {
-      res.status(204).json({
-        message: 'No Countries found, contact Angular-YelpCamp administrator!',
-        countriesList,
-      });
-    }
-  } catch (error) {
-    return returnError(
-      'get-all-Countries',
-      error,
-      500,
-      'Error fetching Countries!',
-      res
-    );
-  }
-};
-
-exports.getAllAmenities = async (req, res) => {
-  //No auth required to get this static data list
-  try {
     const amenitiesList = await Amenities.find();
+    const hikesData = await Hike.find();
 
-    if (amenitiesList) {
+    if (countriesList && amenitiesList && hikesData && hikesData.length > 0) {
       res.status(200).json({
-        message: 'Amenities fetched successfully!',
-        amenitiesList,
+        message: 'Misc Data fetched successfully!',
+        campStaticData: {
+          countriesList,
+          amenitiesList,
+          seasons: hikesData[0].seasons,
+          hikingLevels: hikesData[0].hikingLevels,
+          trekTechnicalGrades: hikesData[0].trekTechnicalGrades,
+          fitnessLevels: hikesData[0].fitnessLevels,
+        },
       });
     } else {
+      let data = '';
+
+      if (!countriesList) {
+        data = 'countries ';
+      }
+      if (!amenitiesList) {
+        data += 'amenities ';
+      }
+      if (!hikesData) {
+        data += 'hikes data ';
+      }
+
       res.status(204).json({
-        message: 'No amenities found, contact Angular-YelpCamp administrator!',
-        amenitiesList: [],
+        message: `No ${data} found, contact Angular-YelpCamp administrator!`,
+        countriesList,
       });
     }
   } catch (error) {
     return returnError(
-      'get-all-amenities',
+      'get-misc-camp-data',
       error,
       500,
-      'Error fetching amenities!',
+      'Error fetching Camp Misc Data!',
       res
     );
   }
@@ -213,6 +208,22 @@ exports.createCampground = async (req, res) => {
     req.body.amenities = JSON.parse(req.body.amenities);
   }
 
+  if (typeof req.body.bestSeasons === 'string') {
+    req.body.bestSeasons = JSON.parse(req.body.bestSeasons);
+  }
+
+  if (typeof req.body.hikingLevel === 'string') {
+    req.body.hikingLevel = JSON.parse(req.body.hikingLevel);
+  }
+
+  if (typeof req.body.fitnessLevel === 'string') {
+    req.body.fitnessLevel = JSON.parse(req.body.fitnessLevel);
+  }
+
+  if (typeof req.body.trekTechnicalGrade === 'string') {
+    req.body.trekTechnicalGrade = JSON.parse(req.body.trekTechnicalGrade);
+  }
+
   try {
     // upload image file on cloud and save return path on db
     let result = await cloudinary.uploader.upload(req.file.path);
@@ -231,6 +242,8 @@ exports.createCampground = async (req, res) => {
     };
 
     addedCampground = await Campground.create(req.body);
+
+    console.log('addedCampground', addedCampground);
 
     res.status(201).json({
       message: 'Campground created successfully!',
@@ -409,6 +422,25 @@ exports.editCampground = async (req, res) => {
           typeof req.body.amenities === 'string'
             ? JSON.parse(req.body.amenities)
             : req.body.amenities,
+        bestSeasons:
+          typeof req.body.bestSeasons === 'string'
+            ? JSON.parse(req.body.bestSeasons)
+            : req.body.bestSeasons,
+
+        hikingLevel:
+          typeof req.body.hikingLevel === 'string'
+            ? JSON.parse(req.body.hikingLevel)
+            : req.body.hikingLevel,
+
+        fitnessLevel:
+          typeof req.body.fitnessLevel === 'string'
+            ? JSON.parse(req.body.fitnessLevel)
+            : req.body.fitnessLevel,
+
+        trekTechnicalGrade:
+          typeof req.body.trekTechnicalGrade === 'string'
+            ? JSON.parse(req.body.trekTechnicalGrade)
+            : req.body.trekTechnicalGrade,
       }
     );
     // console.log(req.userData.userId);

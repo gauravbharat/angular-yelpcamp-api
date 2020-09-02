@@ -11,11 +11,8 @@ router.get('', CampgroundController.getAllCampgrounds);
 // Get stats for UI Homepage
 router.get('/stats', CampgroundController.getCampgroundsStats);
 
-// Get all amenities
-router.get('/amenities', CampgroundController.getAllAmenities);
-
-// Get all countries
-router.get('/countries', CampgroundController.getAllCountries);
+// Get all static data
+router.get('/static', CampgroundController.getMiscStaticData);
 
 // Get a single campground
 router.get('/:campgroundId', CampgroundController.getCampground);
