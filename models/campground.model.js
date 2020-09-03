@@ -42,7 +42,6 @@ let campgroundSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Countries',
       },
-      Continent_Code: String,
       Continent_Name: String,
       Country_Name: String,
       Two_Letter_Country_Code: String,

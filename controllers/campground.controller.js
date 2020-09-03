@@ -36,49 +36,91 @@ const getCloudinaryImagePublicId = (strPath) => {
   return null;
 };
 
+const getHikeData = async () => {
+  try {
+    return await Hike.find();
+  } catch (error) {
+    throw new Error('Error getting Camp levels data!');
+  }
+};
+
 exports.getMiscStaticData = async (req, res) => {
   //No auth required to get this static data list
   try {
     const countriesList = await Countries.find();
     const amenitiesList = await Amenities.find();
-    const hikesData = await Hike.find();
+    const hikesData = await getHikeData();
 
-    if (countriesList && amenitiesList && hikesData && hikesData.length > 0) {
-      res.status(200).json({
-        message: 'Misc Data fetched successfully!',
-        campStaticData: {
-          countriesList,
-          amenitiesList,
-          seasons: hikesData[0].seasons,
-          hikingLevels: hikesData[0].hikingLevels,
-          trekTechnicalGrades: hikesData[0].trekTechnicalGrades,
-          fitnessLevels: hikesData[0].fitnessLevels,
-        },
-      });
-    } else {
-      let data = '';
+    let data = '';
+    let dataError = false;
 
-      if (!countriesList) {
-        data = 'countries ';
-      }
-      if (!amenitiesList) {
-        data += 'amenities ';
-      }
-      if (!hikesData) {
-        data += 'hikes data ';
-      }
+    if (!countriesList) {
+      data = 'countries ';
+      dataError = true;
+    }
+    if (!amenitiesList) {
+      data += 'amenities ';
+      dataError = true;
+    }
+    if (!hikesData || hikesData.length <= 0) {
+      data += 'hikes data ';
+      dataError = true;
+    }
 
-      res.status(204).json({
+    if (dataError)
+      return res.status(204).json({
         message: `No ${data} found, contact Angular-YelpCamp administrator!`,
         countriesList,
       });
-    }
+
+    res.status(200).json({
+      message: 'Misc Data fetched successfully!',
+      campStaticData: {
+        countriesList,
+        amenitiesList,
+        seasons: hikesData[0].seasons,
+        hikingLevels: hikesData[0].hikingLevels,
+        trekTechnicalGrades: hikesData[0].trekTechnicalGrades,
+        fitnessLevels: hikesData[0].fitnessLevels,
+      },
+    });
   } catch (error) {
     return returnError(
       'get-misc-camp-data',
       error,
       500,
       'Error fetching Camp Misc Data!',
+      res
+    );
+  }
+};
+
+exports.getCampLevelsData = async (req, res) => {
+  try {
+    const hikesData = await getHikeData();
+
+    if (!hikesData) {
+      return res.status(204).json({
+        message: `No Camp Levels data found, contact Angular-YelpCamp administrator!`,
+        countriesList,
+      });
+    }
+
+    res.status(200).json({
+      message: 'Camp Levels Data fetched successfully!',
+      campLevelsData: {
+        seasons: hikesData[0].seasons,
+        hikingLevels: hikesData[0].hikingLevels,
+        trekTechnicalGrades: hikesData[0].trekTechnicalGrades,
+        fitnessLevels: hikesData[0].fitnessLevels,
+      },
+    });
+  } catch (error) {
+    return returnError(
+      'get-misc-camp-data',
+      error,
+      500,
+      'Error fetching Camp Levels Data!',
       res
     );
   }
@@ -104,7 +146,7 @@ exports.getAllCampgrounds = async (req, res) => {
     campgroundQuery
       .skip(pageSize * (currentPage - 1))
       .limit(pageSize)
-      .sort([['created', -1]]);
+      .sort([['updatedAt', -1]]);
   }
 
   try {
@@ -224,6 +266,10 @@ exports.createCampground = async (req, res) => {
     req.body.trekTechnicalGrade = JSON.parse(req.body.trekTechnicalGrade);
   }
 
+  if (typeof req.body.country === 'string') {
+    req.body.country = JSON.parse(req.body.country);
+  }
+
   try {
     // upload image file on cloud and save return path on db
     let result = await cloudinary.uploader.upload(req.file.path);
@@ -243,7 +289,7 @@ exports.createCampground = async (req, res) => {
 
     addedCampground = await Campground.create(req.body);
 
-    console.log('addedCampground', addedCampground);
+    // console.log('addedCampground', addedCampground);
 
     res.status(201).json({
       message: 'Campground created successfully!',
@@ -441,9 +487,14 @@ exports.editCampground = async (req, res) => {
           typeof req.body.trekTechnicalGrade === 'string'
             ? JSON.parse(req.body.trekTechnicalGrade)
             : req.body.trekTechnicalGrade,
+
+        country:
+          typeof req.body.country === 'string'
+            ? JSON.parse(req.body.country)
+            : req.body.country,
       }
     );
-    // console.log(req.userData.userId);
+    // console.log(req.body.country);
     // console.log('edit campground result', result);
 
     if (result.n > 0) {

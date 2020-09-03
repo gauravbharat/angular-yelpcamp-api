@@ -14,6 +14,9 @@ router.get('/stats', CampgroundController.getCampgroundsStats);
 // Get all static data
 router.get('/static', CampgroundController.getMiscStaticData);
 
+// Get Camp Levels static data
+router.get('/camp-levels', CampgroundController.getCampLevelsData);
+
 // Get a single campground
 router.get('/:campgroundId', CampgroundController.getCampground);
 

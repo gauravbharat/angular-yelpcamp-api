@@ -21,7 +21,7 @@ mongoose
     useCreateIndex: true,
   })
   .then(() => {
-    chalk.logSuccess('Connected to database!');
+    chalk.logSuccess(`Connected to database ${process.env.DATABASEURL} !`);
     return;
   })
   .then(() => {
