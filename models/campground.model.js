@@ -68,6 +68,10 @@ let campgroundSchema = new mongoose.Schema(
       levelName: String,
       levelDesc: String,
     },
+    rating: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

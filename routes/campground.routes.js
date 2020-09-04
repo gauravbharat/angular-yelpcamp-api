@@ -43,4 +43,14 @@ router.delete(
   CampgroundController.deleteCampground
 );
 
+// get current user's camp rating
+router.get(
+  '/rating/:campgroundId',
+  checkAuth,
+  CampgroundController.getUserCampRating
+);
+
+// update campground rating
+router.post('/rating', checkAuth, CampgroundController.rateCampround);
+
 module.exports = router;

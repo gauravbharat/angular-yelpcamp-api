@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Campground = require('../models/campground.model');
 const User = require('../models/user.model');
+const Rating = require('../models/rating.model');
 const { Amenities } = require('../models/amenities.model');
 const { Countries } = require('../models/countries.model');
 const { Hike } = require('../models/hike.model');
@@ -15,6 +16,7 @@ const {
   validateIdentifier,
 } = require('../utils/validations.util');
 const { returnError } = require('../utils/error.util');
+const { RSA_NO_PADDING } = require('constants');
 
 const escapeRegex = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
@@ -186,7 +188,24 @@ exports.getCampground = async (req, res) => {
       .exec();
 
     if (campground) {
-      res.status(200).json(campground);
+      let ratingData;
+
+      if (campground.rating > 0) {
+        const ratings = await Rating.find({
+          campgroundId,
+        });
+
+        if (ratings.length > 0) {
+          ratingData = await {
+            ratingsCount: ratings.length,
+            ratedBy: ratings.map((rating) => rating.author.username),
+          };
+        }
+      }
+
+      let campgroundData = { campground, ratingData };
+
+      res.status(200).json(campgroundData);
     } else {
       res.status(404).json({ message: 'Campground not found!' });
     }
@@ -557,5 +576,133 @@ exports.deleteCampground = async (req, res) => {
   } catch (error) {
     chalk.logError('delete-campground: cloudinary_delete_post', error);
     console.log('cloudinary_delete_post', error);
+  }
+};
+
+exports.getUserCampRating = async (req, res) => {
+  let response = await validateIdentifier(
+    PROCESS_CAMPGROUND,
+    'get-user-campground-rating',
+    req.params.campgroundId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
+  }
+
+  let campgroundId = response.id;
+
+  try {
+    const foundRating = await Rating.findOne({
+      'author.id': req.userData.userId,
+      campgroundId,
+    });
+
+    // console.log('foundRating', foundRating);
+
+    if (!foundRating) {
+      return res.status(204).json({
+        message: 'No current user rating found for this campground!',
+        rating: 0,
+      });
+    }
+
+    return res.status(200).json({
+      message: 'User rating found for current campground',
+      rating: foundRating.rating,
+    });
+  } catch (error) {
+    return returnError(
+      'get-user-campground-rating',
+      error,
+      500,
+      'Error rating campground!',
+      res
+    );
+  }
+};
+
+exports.rateCampround = async (req, res) => {
+  /** Return if user passes an invalid campgroundId */
+  let response = await validateIdentifier(
+    PROCESS_CAMPGROUND,
+    'rate-campground',
+    req.body.campgroundId,
+    res
+  );
+
+  if (!response.id) {
+    return res;
+  }
+
+  let campgroundId = response.id;
+  let rating = req.body.rating;
+
+  if (isNaN(rating) || rating > 5) {
+    return res
+      .status(400)
+      .json({ message: 'Rating should be a numeric value between 1 and 5!' });
+  }
+
+  try {
+    const userRating = await Rating.findOne({
+      'author.id': req.userData.userId,
+      campgroundId,
+    });
+
+    if (userRating) {
+      // update
+      userRating.rating = rating;
+      await userRating.save();
+    } else {
+      const result = await Rating.create({
+        rating,
+        'author.id': req.userData.userId,
+        'author.username': req.userData.username,
+        campgroundId,
+      });
+    }
+
+    /** Get the ratings list from Rating for this campground, calculate average and store it in Campground */
+    const ratings = await Rating.find({
+      campgroundId,
+    });
+
+    let sum = 0;
+    ratings.forEach((r) => {
+      if (r.rating > 0) sum += r.rating;
+    });
+    // Calculate average and round it to nearest .5
+    let average = sum / ratings.length;
+    average = (Math.round(average * 2) / 2).toFixed(1);
+
+    // console.log('Campground rating average', average);
+
+    const result = await Campground.updateOne(
+      { _id: campgroundId },
+      { rating: average }
+    );
+
+    // console.log('Campground.updateOne result', result);
+
+    if (result.n > 0) {
+      res.status(200).json({
+        message: 'Update successful!',
+        // campgroundRating: average,
+        // totalRatings: ratings.length,
+        // currentUserRating: req.body.rating,
+      });
+    } else {
+      res.status(401).json({ message: 'Not authorized!' });
+    }
+  } catch (error) {
+    return returnError(
+      'rate-campground',
+      error,
+      500,
+      'Error rating campground!',
+      res
+    );
   }
 };
