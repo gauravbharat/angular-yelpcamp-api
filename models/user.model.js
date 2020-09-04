@@ -30,7 +30,6 @@ let userSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
-    created: { type: Date, default: Date.now },
     isPublisher: { type: Boolean, default: false },
     isRequestedAdmin: { type: Boolean, default: false },
     isSuperAdmin: { type: Boolean, default: false },

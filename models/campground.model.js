@@ -24,7 +24,6 @@ let campgroundSchema = new mongoose.Schema(
       },
       username: String,
     },
-    created: { type: Date, default: Date.now },
     comments: [
       {
         type: mongoose.Schema.Types.ObjectId,

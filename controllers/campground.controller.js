@@ -6,6 +6,7 @@ const { Countries } = require('../models/countries.model');
 const { Hike } = require('../models/hike.model');
 const chalk = require('../utils/chalk.util');
 const EmailHandler = require('../utils/email.util');
+const CloudinaryAPI = require('../utils/cloudinary.util');
 
 const NotificationController = require('./notification.controller');
 
@@ -15,25 +16,8 @@ const {
 } = require('../utils/validations.util');
 const { returnError } = require('../utils/error.util');
 
-let cloudinary = require('cloudinary');
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 const escapeRegex = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-};
-
-const getCloudinaryImagePublicId = (strPath) => {
-  // Extract Cloudinary image public Id from the path
-  if (strPath) {
-    let slice1 = strPath.slice(strPath.lastIndexOf('/') + 1);
-    let publicId = slice1.slice(0, slice1.lastIndexOf('.'));
-    return publicId;
-  }
-  return null;
 };
 
 const getHikeData = async () => {
@@ -272,7 +256,10 @@ exports.createCampground = async (req, res) => {
 
   try {
     // upload image file on cloud and save return path on db
-    let result = await cloudinary.uploader.upload(req.file.path);
+    let result = await CloudinaryAPI.cloudinary.v2.uploader.upload(
+      req.file.path,
+      { folder: 'ng-yelpcamp' }
+    );
     req.body.image = result.secure_url;
 
     // return res.status(200).json({ message: 'trial run' });
@@ -435,13 +422,17 @@ exports.editCampground = async (req, res) => {
 
       oldImagePath = campground.image;
 
-      let result = await cloudinary.uploader.upload(req.file.path);
+      let result = await CloudinaryAPI.cloudinary.v2.uploader.upload(
+        req.file.path,
+        { folder: 'ng-yelpcamp' }
+      );
       image = result.secure_url;
 
       if (oldImagePath) {
         // Don't keep the user waiting for the old image to be deleted
-        cloudinary.v2.uploader.destroy(
-          getCloudinaryImagePublicId(oldImagePath)
+        CloudinaryAPI.cloudinary.v2.uploader.destroy(
+          'ng-yelpcamp/' +
+            CloudinaryAPI.getCloudinaryImagePublicId(oldImagePath)
         );
       }
     } catch (error) {
@@ -559,8 +550,8 @@ exports.deleteCampground = async (req, res) => {
   // destroy image uploaded on Cloudinary
   try {
     if (imagePath) {
-      let result = await cloudinary.v2.uploader.destroy(
-        getCloudinaryImagePublicId(imagePath)
+      let result = await CloudinaryAPI.cloudinary.v2.uploader.destroy(
+        'ng-yelpcamp/' + CloudinaryAPI.getCloudinaryImagePublicId(imagePath)
       );
     }
   } catch (error) {

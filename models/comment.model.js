@@ -11,8 +11,6 @@ let commentSchema = new mongoose.Schema(
       username: String,
       avatar: String,
     },
-    created: { type: Date, default: Date.now },
-    edited: { type: Date, default: Date.now },
     isEdited: { type: Boolean, default: false },
     likes: [
       new mongoose.Schema(

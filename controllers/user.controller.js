@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const EmailHandler = require('../utils/email.util');
+const CloudinaryAPI = require('../utils/cloudinary.util');
 
 const User = require('../models/user.model');
 const Campground = require('../models/campground.model');
@@ -640,17 +641,39 @@ exports.updateUserAvatar = async (req, res) => {
   let userId = response.id;
 
   try {
-    const avatar = req.body.avatar.trim();
+    const user = await User.findOne({ _id: userId });
 
-    if (!avatar) {
+    if (!user) {
+      return res.status(404).json({ message: 'User not found!' });
+    }
+
+    const oldImageUrl = user.avatar;
+    const newImageUrl = req.body.avatar.trim();
+
+    if (!newImageUrl) {
       return res
         .status(400)
-        .json({ message: 'Invalid path for new user avatar image!' });
+        .json({ message: 'Invalid url for new user avatar image!' });
     }
+
+    const uploadResult = await CloudinaryAPI.cloudinary.v2.uploader.upload(
+      newImageUrl,
+      {
+        folder: 'avatars',
+      }
+    );
+    const avatar = uploadResult.secure_url;
 
     let result = await User.updateOne({ _id: userId }, { avatar });
 
     if (result.n > 0) {
+      if (oldImageUrl && oldImageUrl.includes('res.cloudinary.com')) {
+        // Don't keep the user waiting for the old image to be deleted
+        CloudinaryAPI.cloudinary.v2.uploader.destroy(
+          'avatars/' + CloudinaryAPI.getCloudinaryImagePublicId(oldImageUrl)
+        );
+      }
+
       await Comment.updateMany(
         { 'author.id': userId },
         { 'author.avatar': avatar }
