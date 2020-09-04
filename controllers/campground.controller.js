@@ -16,7 +16,6 @@ const {
   validateIdentifier,
 } = require('../utils/validations.util');
 const { returnError } = require('../utils/error.util');
-const { RSA_NO_PADDING } = require('constants');
 
 const escapeRegex = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
