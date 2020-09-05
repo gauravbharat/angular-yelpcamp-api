@@ -4,6 +4,9 @@ const checkAuth = require('../middleware/check-auth.middleware');
 
 const UserController = require('../controllers/user.controller');
 
+// Get all users list
+router.get('/allUsers', checkAuth, UserController.getAllUsers);
+
 // Get user details
 router.get('/:userId', checkAuth, UserController.getUser);
 

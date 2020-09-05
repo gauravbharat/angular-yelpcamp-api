@@ -7,6 +7,7 @@ const User = require('../models/user.model');
 const Campground = require('../models/campground.model');
 const Comment = require('../models/comment.model');
 const Notification = require('../models/notification.model');
+const Rating = require('../models/rating.model');
 
 const NotificationController = require('./notification.controller');
 
@@ -32,6 +33,64 @@ const getUserCampgrounds = async (userId) => {
     }));
   } catch (error) {
     throw new Error('Error getting user campgrounds!');
+  }
+};
+
+const getUserActivityTotals = async (userId) => {
+  try {
+    const totalCampgrounds =
+      (await Campground.countDocuments({ 'author.id': userId })) | 0;
+    const totalComments =
+      (await Comment.countDocuments({ 'author.id': userId })) | 0;
+    const totalRatings =
+      (await Rating.countDocuments({ 'author.id': userId })) | 0;
+
+    const userActivityCounts = {
+      totalCampgrounds,
+      totalComments,
+      totalRatings,
+    };
+
+    return userActivityCounts;
+  } catch (error) {
+    // console.log(error);
+    throw new Error('Error fetching user activity totals');
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const allUsers = await User.find({});
+
+    let appUsers = [];
+    for (let i = 0; i < allUsers.length; i++) {
+      const userActivityCounts = await getUserActivityTotals(allUsers[i]._id);
+      await appUsers.push({
+        _id: allUsers[i]._id,
+        username: allUsers[i].username,
+        email: allUsers[i].email,
+        name: `${allUsers[i].firstName} ${allUsers[i].lastName}`,
+        avatar: allUsers[i].avatar,
+        totalFollowers: allUsers[i].followers.length | 0,
+        totalCampgrounds: userActivityCounts.totalCampgrounds,
+        totalComments: userActivityCounts.totalComments,
+        totalRatings: userActivityCounts.totalRatings,
+        createdAt: allUsers[i].createdAt,
+      });
+    }
+
+    res.status(200).json({
+      message: 'All users fetched successfully!',
+      allUsers: appUsers,
+    });
+  } catch (error) {
+    return returnError(
+      'get-all-users',
+      error,
+      500,
+      'Error fetching all users!',
+      res
+    );
   }
 };
 

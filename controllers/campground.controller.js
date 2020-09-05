@@ -112,6 +112,46 @@ exports.getCampLevelsData = async (req, res) => {
 };
 
 exports.getAllCampgrounds = async (req, res) => {
+  try {
+    const camps = await Campground.find({});
+
+    const allCampgrounds = await camps.map((camp) => {
+      return {
+        _id: camp._id,
+        name: camp.name,
+        countryName: camp.country.Country_Name,
+        continentName: camp.country.Continent_Name,
+        countryCode: camp.country.Two_Letter_Country_Code,
+        rating: camp.rating,
+        price: camp.price,
+        totalAmenities: camp.amenities ? camp.amenities.length : 0,
+        totalComments: camp.comments ? camp.comments.length : 0,
+        location: camp.location,
+        fitnessLevel: camp.fitnessLevel ? camp.fitnessLevel.level : '--',
+        hikingLevel: camp.hikingLevel ? camp.hikingLevel.level : '--',
+        trekTechnicalGrade: camp.trekTechnicalGrade
+          ? camp.trekTechnicalGrade.level
+          : '--',
+        author: camp.author,
+      };
+    });
+
+    return res.status(200).json({
+      message: 'All camps fetched successfully!',
+      allCampgrounds,
+    });
+  } catch (error) {
+    return returnError(
+      'get-all-campgrounds',
+      error,
+      500,
+      'Error fetching all campgrounds!',
+      res
+    );
+  }
+};
+
+exports.getCampgrounds = async (req, res) => {
   // Get the pagination query parameters
   // Prefixing + operator to a string converts its type to Number
   const pageSize = +req.query.pagesize;
@@ -156,7 +196,7 @@ exports.getAllCampgrounds = async (req, res) => {
     }
   } catch (error) {
     return returnError(
-      'get-all-campgrounds',
+      'get-campgrounds',
       error,
       500,
       'Error fetching campgrounds!',

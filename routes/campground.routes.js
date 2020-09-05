@@ -5,8 +5,15 @@ const checkAuth = require('../middleware/check-auth.middleware');
 const extractFile = require('../middleware/multer.middleware');
 const CampgroundController = require('../controllers/campground.controller');
 
+// get campgounds list for stats page
+router.get(
+  '/allCampgrounds',
+  checkAuth,
+  CampgroundController.getAllCampgrounds
+);
+
 // Get all campgrounds
-router.get('', CampgroundController.getAllCampgrounds);
+router.get('', CampgroundController.getCampgrounds);
 
 // Get stats for UI Homepage
 router.get('/stats', CampgroundController.getCampgroundsStats);
