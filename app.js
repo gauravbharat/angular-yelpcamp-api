@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const chalk = require('./utils/chalk.util');
 const app = express();
 const expressSanitizer = require('express-sanitizer');
+const cors = require('cors');
 
 const { populateAmenities } = require('./models/amenities.model');
 const { populateCountries } = require('./models/countries.model');
@@ -43,6 +44,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 /** Use Express Sanitizer for select incoming text */
 app.use(expressSanitizer());
 
+app.use(cors({origin: '*'}));
 /** Intercept incoming requests and allow CORS by setting following headers to -
  * Allow ANY origin access,
  * Allow SPECIFIC header requests, and
@@ -50,7 +52,7 @@ app.use(expressSanitizer());
  * Tip: OPTIONS are passed along with the POST call
  */
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://ng-yelpcamp.web.app/');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept, Authorization'
